@@ -85,8 +85,8 @@ export default function WeatherBanner() {
       let queryStr = cityQuery ? `?q=${cityQuery}` : `?lat=${lat}&lon=${lon}`;
 
       const [curRes, fcRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather/current${queryStr}`).then(r => r.json()),
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather/forecast${queryStr}`).then(r => r.json())
+        fetch(`http://localhost:5000/api/weather/current${queryStr}`).then(r => r.json()),
+        fetch(`http://localhost:5000/api/weather/forecast${queryStr}`).then(r => r.json())
       ]);
 
       if (curRes.success) {

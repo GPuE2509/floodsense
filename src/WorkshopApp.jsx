@@ -271,8 +271,7 @@ export default function WorkshopApp({
     let retryTimer;
 
     const connect = () => {
-      const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const wsUrl = apiRoot.replace(/^http/, 'ws');
+      const wsUrl = `ws://localhost:5000`;
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {

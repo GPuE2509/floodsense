@@ -323,7 +323,7 @@ function RescueMap({ eta, currentRescue, userLat, userLng }) {
         onClick={() => setAutoCenter(true)}
         style={{
           position: 'absolute',
-          top: 12,
+          bottom: 12,
           right: 12,
           zIndex: 1000,
           background: autoCenter ? 'var(--cyan-400)' : 'rgba(0,0,0,0.75)',
@@ -862,6 +862,37 @@ export default function UserSOS() {
     return () => clearInterval(interval);
   }, [currentRescue?.status]);
 
+  const prevStatusRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentRescue) {
+      prevStatusRef.current = null;
+      return;
+    }
+
+    const prevStatus = prevStatusRef.current;
+    const newStatus = currentRescue.status;
+
+    if (prevStatus && prevStatus !== newStatus) {
+      if (newStatus === 'Completed' || newStatus === 'Resolved') {
+        const isMobileRepair = !!currentRescue.workshop_id;
+        if (isMobileRepair) {
+          showToast(
+            'Sửa xe lưu động hoàn thành',
+            'Cơ sở sửa xe đã xác nhận hoàn thành sửa chữa. Vui lòng xác nhận hoàn thành để đóng yêu cầu.'
+          );
+        } else {
+          showToast(
+            'Cứu hộ hoàn thành',
+            'Cộng tác viên cứu hộ đã xác nhận hoàn thành hỗ trợ. Vui lòng xác nhận an toàn để hoàn tất.'
+          );
+        }
+      }
+    }
+
+    prevStatusRef.current = newStatus;
+  }, [currentRescue?.status, currentRescue?.workshop_id]);
+
   // Emergency facilities state (real API)
   const [emergencyFacilities, setEmergencyFacilities] = useState([]);
   const [loadingEmergency, setLoadingEmergency] = useState(false);
@@ -1157,27 +1188,145 @@ export default function UserSOS() {
   const mobileWorkshops = workshops;
 
   const renderRescueTracking = (rescue) => {
+    const isMobileRepair = !!rescue.workshop_id;
+    const createdTime = new Date(rescue.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const isAssigned = rescue.status === 'Assigned' || rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed' || rescue.status === 'Resolved';
+    const isMoving = rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed' || rescue.status === 'Resolved';
+    const isArrived = rescue.status === 'Arrived' || rescue.status === 'Completed' || rescue.status === 'Resolved';
+    const isCompleted = rescue.status === 'Completed' || rescue.status === 'Resolved';
+
+    const steps = isMobileRepair ? [
+      {
+        time: createdTime,
+        label: "Request recorded",
+        status: 'done'
+      },
+      {
+        time: isAssigned ? 'Done' : 'Pending',
+        label: "Staff assigned",
+        status: isAssigned ? 'done' : 'active'
+      },
+      {
+        time: rescue.status === 'In_Progress' ? 'Active' : (isArrived ? 'Done' : '—'),
+        label: "Moving to scene",
+        status: rescue.status === 'In_Progress' ? 'active' : (isArrived ? 'done' : 'pending')
+      },
+      {
+        time: rescue.status === 'Arrived' ? 'Active' : (isCompleted ? 'Done' : '—'),
+        label: "Arrived & repairing",
+        status: rescue.status === 'Arrived' ? 'active' : (isCompleted ? 'done' : 'pending')
+      },
+      {
+        time: isCompleted ? 'Done' : '—',
+        label: "Confirm task completion",
+        status: isCompleted ? 'done' : 'pending'
+      }
+    ] : [
+      {
+        time: createdTime,
+        label: "Request recorded",
+        status: 'done'
+      },
+      {
+        time: isAssigned ? 'Done' : 'Pending',
+        label: "Volunteer assigned",
+        status: isAssigned ? 'done' : 'active'
+      },
+      {
+        time: rescue.status === 'In_Progress' ? 'Active' : (isArrived ? 'Done' : '—'),
+        label: "Moving to scene",
+        status: rescue.status === 'In_Progress' ? 'active' : (isArrived ? 'done' : 'pending')
+      },
+      {
+        time: rescue.status === 'Arrived' ? 'Active' : (isCompleted ? 'Done' : '—'),
+        label: "Arrived & assisting",
+        status: rescue.status === 'Arrived' ? 'active' : (isCompleted ? 'done' : 'pending')
+      },
+      {
+        time: isCompleted ? 'Done' : '—',
+        label: "Confirm safety",
+        status: isCompleted ? 'done' : 'pending'
+      }
+    ];
+
+    const containerStyle = isMobile ? {
+      display: 'grid',
+      gap: 16,
+      gridTemplateColumns: '1fr'
+    } : {
+      display: 'grid',
+      gap: 16,
+      gridTemplateColumns: '1.4fr 0.6fr'
+    };
+
     return (
       <div style={{ display: 'grid', gap: 16 }}>
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className="flex items-center gap-2">
-              <Navigation size={14} color="var(--orange-400)" />
-              <div className="section-title">Real-time rescue vehicle tracking map</div>
+        <div style={containerStyle}>
+          {/* Left Column: Map */}
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '12px 18px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="flex items-center gap-2">
+                <Navigation size={14} color="var(--orange-400)" />
+                <div className="section-title">
+                  {isMobileRepair ? 'MISSION TRACKING MAP' : 'MISSION TRACKING MAP'}
+                </div>
+              </div>
+              <div className="live-indicator"><div className="live-dot" /> REALTIME</div>
             </div>
-            <div className="live-indicator"><div className="live-dot" /> REALTIME</div>
+            <div style={{ padding: 16 }}>
+              <RescueMap
+                eta={eta}
+                currentRescue={rescue}
+                userLat={rescue ? rescue.initial_lat : coords.lat}
+                userLng={rescue ? rescue.initial_lng : coords.lng}
+              />
+            </div>
           </div>
-          <div style={{ padding: 16 }}>
-            <RescueMap
-              eta={eta}
-              currentRescue={rescue}
-              userLat={rescue ? rescue.initial_lat : coords.lat}
-              userLng={rescue ? rescue.initial_lng : coords.lng}
-            />
+
+          {/* Right Column: Mission Progress */}
+          <div className="card p-6" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+            <div className="section-title" style={{ marginBottom: 14 }}>MISSION PROGRESS</div>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {steps.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div style={{
+                    width: 10, height: 10, borderRadius: '50%', marginTop: 4, flexShrink: 0,
+                    background: step.status === 'done' ? 'var(--green-400)' : step.status === 'active' ? 'var(--orange-400)' : 'var(--bg-elevated)',
+                    border: step.status === 'pending' ? '2px solid var(--border-dim)' : 'none',
+                    boxShadow: step.status === 'active' ? '0 0 10px var(--orange-400)' : 'none',
+                    animation: step.status === 'active' ? 'blink 1.5s ease-in-out infinite' : 'none',
+                  }} />
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: step.status === 'active' ? 700 : 500, color: step.status === 'pending' ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                      {step.label}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      <Clock size={10} style={{ display: 'inline', marginRight: 3 }} />{step.time}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-dim)', display: 'grid', gap: 10 }}>
+              {rescue.workshop_id ? (
+                <button className="btn btn-success" onClick={handleSafeCheck} disabled={isSending} style={{ width: '100%' }}>
+                  <CheckCircle size={14} /> Completed
+                </button>
+              ) : (
+                <button className="btn btn-success" onClick={handleSafeCheck} disabled={isSending} style={{ width: '100%' }}>
+                  <ShieldCheck size={14} /> Confirm safety
+                </button>
+              )}
+              <button className="btn btn-danger" onClick={handleCancelSOS} disabled={isSending} style={{ width: '100%' }}>
+                <XCircle size={14} /> Cancel Request
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Real-time embedded rescue chat box */}
+        {/* Real-time embedded rescue chat box - Full Width */}
         {(() => {
           if (!rescue) return null;
           const targetUserId = rescue.assigned_volunteer_id?.user_id?._id || rescue.assigned_staff_id?.user_id?._id || rescue.assigned_volunteer_id?._id || rescue.assigned_staff_id?._id;
@@ -1197,7 +1346,7 @@ export default function UserSOS() {
           }
 
           return (
-            <div id="rescue-live-chat">
+            <div id="rescue-live-chat" style={{ width: '100%' }}>
               <RescueSessionChat
                 targetUser={{
                   id: targetUserId,
@@ -1214,113 +1363,6 @@ export default function UserSOS() {
             </div>
           );
         })()}
-
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className="section-title">Request processing status</div>
-            <span className={`badge ${rescue ? (rescue.status === 'Pending' ? 'badge-orange' : 'badge-green') : 'badge-ghost'}`} style={{ fontSize: '0.65rem' }}>
-              {rescue ? rescue.status.toUpperCase() : 'INACTIVE'}
-            </span>
-          </div>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ position: 'relative', marginBottom: 20 }}>
-              {(() => {
-                if (!rescue) return [];
-
-                const createdTime = new Date(rescue.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                const isAssigned = rescue.status === 'Assigned' || rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed';
-                const isMoving = rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed';
-                const isArrived = rescue.status === 'Arrived' || rescue.status === 'Completed';
-
-                return [
-                  {
-                    time: createdTime,
-                    label: "Rescue request recorded",
-                    desc: "SOS signal successfully registered by the system",
-                    status: 'done'
-                  },
-                  {
-                    time: isAssigned ? 'Done' : 'Connecting',
-                    label: rescue.workshop_id ? "Contacting workshop" : "Searching for nearby volunteers",
-                    desc: isAssigned
-                      ? "Scanning completed."
-                      : (rescue.workshop_id ? "Waiting for workshop to accept and assign staff..." : "Scanning for active volunteers within a 5km radius..."),
-                    status: isAssigned ? 'done' : 'active'
-                  },
-                  {
-                    time: isAssigned ? 'Assigned' : '—',
-                    label: isAssigned
-                      ? `${rescue.workshop_id ? 'Workshop staff' : 'Volunteer'} accepted: ${rescue.assigned_volunteer_id?.user_id?.full_name || rescue.assigned_staff_id?.user_id?.full_name || 'Assigned'}`
-                      : (rescue.workshop_id ? "Dispatching workshop staff" : "Dispatching assistance"),
-                    desc: isAssigned
-                      ? `${rescue.workshop_id ? 'Staff' : 'Volunteer'} ${rescue.assigned_volunteer_id?.user_id?.full_name || rescue.assigned_staff_id?.user_id?.full_name} (${rescue.assigned_volunteer_id?.user_id?.phone || rescue.assigned_staff_id?.user_id?.phone || 'No phone'}) has accepted your request.`
-                      : (rescue.workshop_id ? "Waiting for staff assignment..." : "Waiting for volunteer assignment..."),
-                    status: isMoving ? 'done' : (isAssigned ? 'active' : 'pending')
-                  },
-                  {
-                    time: isMoving ? 'Moving' : '—',
-                    label: rescue.workshop_id ? "Staff moving to scene" : "Volunteer moving to scene",
-                    desc: isMoving
-                      ? (rescue.workshop_id ? "Staff is moving to your location." : "Volunteer is moving on the safest routing path.")
-                      : (rescue.workshop_id ? "Waiting for staff to start moving..." : "Waiting for volunteer to start moving..."),
-                    status: isArrived ? 'done' : (isMoving ? 'active' : 'pending')
-                  },
-                  {
-                    time: isArrived ? 'Arrived' : '—',
-                    label: rescue.workshop_id ? "Arrived & repairing" : "Arrived & assisting",
-                    desc: isArrived
-                      ? (rescue.workshop_id ? "Staff has arrived at the scene and is repairing your vehicle." : "Volunteer has arrived at the scene and is assisting you.")
-                      : (rescue.workshop_id ? "Waiting for staff arrival..." : "Waiting for volunteer arrival..."),
-                    status: isArrived ? 'active' : 'pending'
-                  }
-                ];
-              })().map((step, i, arr) => (
-                <div key={i} style={{ display: 'flex', gap: 16, marginBottom: i < arr.length - 1 ? 4 : 0 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32, flexShrink: 0 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: '50%',
-                      background: step.status === 'done' ? 'var(--green-400)' : step.status === 'active' ? 'var(--orange-400)' : 'var(--bg-elevated)',
-                      border: step.status === 'pending' ? '1px solid var(--border-dim)' : 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: step.status === 'active' ? '0 0 12px var(--orange-400)' : 'none',
-                    }}>
-                      {step.status === 'done' ? <CheckCircle size={14} color="white" /> :
-                        step.status === 'active' ? <Activity size={14} color="white" style={{ animation: 'pulse 1s infinite' }} /> :
-                          <Clock size={12} color="var(--text-muted)" />}
-                    </div>
-                    {i < arr.length - 1 && (
-                      <div style={{ width: 2, flex: 1, minHeight: 28, background: step.status === 'done' ? 'var(--green-400)' : 'var(--border-dim)', margin: '4px 0' }} />
-                    )}
-                  </div>
-                  <div style={{ paddingBottom: i < arr.length - 1 ? 20 : 0, paddingTop: 2 }}>
-                    <div style={{ fontWeight: step.status === 'active' ? 700 : 500, fontSize: '0.88rem', color: step.status === 'active' ? 'var(--orange-400)' : step.status === 'done' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      {step.label}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{step.desc}</div>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock size={10} /> {step.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 16, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-              {rescue.workshop_id ? (
-                <button className="btn btn-success" onClick={handleSafeCheck} disabled={isSending}>
-                  <CheckCircle size={14} /> Completed
-                </button>
-              ) : (
-                <button className="btn btn-success" onClick={handleSafeCheck} disabled={isSending}>
-                  <ShieldCheck size={14} />Confirm safety
-                </button>
-              )}
-              <button className="btn btn-danger" onClick={handleCancelSOS} disabled={isSending}>
-                <XCircle size={14} /> Cancel Request
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     );
   };
@@ -1428,7 +1470,7 @@ export default function UserSOS() {
           borderRadius: 'var(--r-md)',
           border: '1px solid var(--border-dim)',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
           gap: '8px 12px',
           fontSize: '0.78rem'
         }}>
@@ -1444,7 +1486,22 @@ export default function UserSOS() {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigator.clipboard.writeText(phoneNum);
+                  try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(phoneNum);
+                    } else {
+                      const textArea = document.createElement("textarea");
+                      textArea.value = phoneNum;
+                      textArea.style.position = "fixed";
+                      document.body.appendChild(textArea);
+                      textArea.focus();
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                    }
+                  } catch (err) {
+                    console.error("Failed to copy phone number:", err);
+                  }
                   setCopiedPhoneId(selectedHistoryItem._id);
                   setTimeout(() => setCopiedPhoneId(null), 2000);
                 }}
@@ -1701,7 +1758,7 @@ export default function UserSOS() {
               disabled={isSending}
               style={{ width: '100%', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, padding: '14px', letterSpacing: '0.06em', opacity: isSending ? 0.7 : 1 }}
             >
-              <Radio size={18} /> {isSending ? 'ĐANG GỬI TÍN HIỆU...' : 'SEND AN EMERGENCY SOS SIGNAL'}
+              <Radio size={18} /> {isSending ? 'SENDING SOS SIGNAL...' : 'SEND AN EMERGENCY SOS SIGNAL'}
             </button>
           </div>
 
@@ -2227,9 +2284,6 @@ export default function UserSOS() {
                           <div className="flex items-start justify-between gap-4">
                             <div style={{ flex: 1 }}>
                               <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 6 }}>
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                  #{item._id.slice(-6).toUpperCase()}
-                                </span>
                                 {statusBadge[item.status] || <span className="badge badge-ghost">{item.status}</span>}
                                 {isMobileRepair && (
                                   <>

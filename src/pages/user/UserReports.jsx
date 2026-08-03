@@ -146,8 +146,7 @@ export default function UserReports() {
   const fetchReports = async () => {
     if (reports.length === 0) setIsLoadingReports(true);
     try {
-      const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiRoot}/api/incident-reports`);
+      const res = await fetch('http://localhost:5000/api/incident-reports');
       const data = await res.json();
       if (data.success) {
         setReports(data.data);
@@ -390,8 +389,7 @@ export default function UserReports() {
         severity: form.severity,
       };
 
-      const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiRoot}/api/incident-reports`, {
+      const res = await fetch('http://localhost:5000/api/incident-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

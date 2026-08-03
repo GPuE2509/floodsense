@@ -450,8 +450,8 @@ export default function UserNotifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const wsUrl = apiRoot.replace(/^http/, 'ws');
+    // Use current location origin to determine WS port, default to localhost:5000
+    const wsUrl = `ws://localhost:5000`;
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
@@ -476,7 +476,7 @@ export default function UserNotifications() {
           const mappedType = mapNotificationType(n.type);
           const newNotif = {
             id: n._id || `ws-notif-${Date.now()}`,
-            title: n.title || 'Thông báo',
+            title: n.title || 'Notification',
             body: n.body || '',
             time: n.created_at
               ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +

@@ -2838,7 +2838,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                           {selectedWs.cover_photo ? (
                             <>
                               <img
-                                src={selectedWs.cover_photo.startsWith('http') ? selectedWs.cover_photo : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${selectedWs.cover_photo.startsWith('/') ? selectedWs.cover_photo : `/${selectedWs.cover_photo}`}`}
+                                src={selectedWs.cover_photo.startsWith('http') ? selectedWs.cover_photo : `http://localhost:5000${selectedWs.cover_photo.startsWith('/') ? selectedWs.cover_photo : `/${selectedWs.cover_photo}`}`}
                                 alt={selectedWs.name}
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -3610,7 +3610,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                                 {ws.cover_photo ? (
                                   <>
                                     <img
-                                      src={ws.cover_photo.startsWith('http') ? ws.cover_photo : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${ws.cover_photo.startsWith('/') ? ws.cover_photo : `/${ws.cover_photo}`}`}
+                                      src={ws.cover_photo.startsWith('http') ? ws.cover_photo : `http://localhost:5000${ws.cover_photo.startsWith('/') ? ws.cover_photo : `/${ws.cover_photo}`}`}
                                       alt={ws.name}
                                       onError={(e) => {
                                         e.target.style.display = 'none';
@@ -5004,7 +5004,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
               >
                 {!isClickTargetActive && (
                   <Popup>
-                    <strong>Tuyến đường cảnh báo:</strong> {r.road_name}
+                    <strong>Warning Road:</strong> {r.road_name}
                   </Popup>
                 )}
               </Polyline>

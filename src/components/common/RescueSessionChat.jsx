@@ -11,6 +11,13 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [phoneCopied, setPhoneCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -250,7 +257,11 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
       overflow: 'hidden',
       border: '1px solid var(--border-dim)',
       boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-      transition: 'all 0.25s ease'
+      transition: 'all 0.25s ease',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      flex: 1
     }}>
       {/* Header */}
       {!hideHeader && (
@@ -282,7 +293,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
               <MessageSquare size={16} />
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 8, flexWrap: 'wrap' }}>
                 {title || `Live Chat with ${targetUser.name || 'Rescuer'}`}
                 <span style={{
                   fontSize: '0.65rem',
@@ -299,7 +310,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
                   <span className="live-dot" style={{ width: 6, height: 6, background: 'var(--green-400)', borderRadius: '50%' }} /> REALTIME
                 </span>
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, marginTop: 2, flexWrap: 'wrap' }}>
                 <span>{targetUser.role || 'Emergency Partner'}</span>
                 {targetUser.phone && targetUser.phone !== 'Not provided' && (
                   <>
@@ -311,19 +322,34 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 8 }}>
             {targetUser.phone && targetUser.phone !== 'Not provided' && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigator.clipboard.writeText(targetUser.phone);
+                  try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(targetUser.phone);
+                    } else {
+                      const textArea = document.createElement("textarea");
+                      textArea.value = targetUser.phone;
+                      textArea.style.position = "fixed";
+                      document.body.appendChild(textArea);
+                      textArea.focus();
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                    }
+                  } catch (err) {
+                    console.error("Failed to copy phone number:", err);
+                  }
                   setPhoneCopied(true);
                   setTimeout(() => setPhoneCopied(false), 2000);
                 }}
                 className="btn btn-ghost btn-sm"
                 style={{
-                  padding: '4px 10px',
+                  padding: isMobile ? '4px 6px' : '4px 10px',
                   height: 28,
                   fontSize: '0.72rem',
                   background: phoneCopied ? 'rgba(34,197,94,0.25)' : 'rgba(34,211,238,0.15)',
@@ -332,7 +358,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
                 }}
                 title="Copy phone number"
               >
-                {phoneCopied ? <CheckCircle2 size={12} /> : <Copy size={12} />} {phoneCopied ? 'Copied SĐT' : 'Copy SĐT'}
+                {phoneCopied ? <CheckCircle2 size={12} /> : <Copy size={12} />} {phoneCopied ? (isMobile ? 'Copied' : 'Copied Phone') : (isMobile ? 'Copy' : 'Copy Phone')}
               </button>
             )}
             <button
@@ -365,7 +391,8 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
             ref={messagesContainerRef}
             style={{
               padding: '16px 18px',
-              height: 320,
+              flex: 1,
+              minHeight: 240,
               overflowY: 'auto',
               background: 'var(--bg-surface)',
               display: 'flex',
@@ -528,7 +555,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
                 onClick={handleSend}
                 disabled={isSending || !inputText.trim()}
               >
-                <Send size={14} /> Gửi
+                <Send size={14} /> Send
               </button>
             </div>
           )}

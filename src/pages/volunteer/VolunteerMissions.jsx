@@ -152,7 +152,7 @@ function VolunteerMissionMap({ activeMission, volunteerProfile, isFullscreen, se
         if (res && res.success && res.data && res.data.length > 0) {
           setRouteAlternatives(res.data);
           setSelectedRouteIdx(0);
-          
+
           const bestRoute = res.data[0];
           const coordinates = bestRoute.geometry.coordinates.map(c => [c[1], c[0]]);
           setRoutePath(coordinates);
@@ -304,7 +304,7 @@ function VolunteerMissionMap({ activeMission, volunteerProfile, isFullscreen, se
         onClick={() => setAutoCenter(true)}
         style={{
           position: 'absolute',
-          top: 12,
+          bottom: 12,
           right: 12,
           zIndex: 1000,
           background: autoCenter ? 'var(--cyan-400)' : 'rgba(0,0,0,0.75)',
@@ -355,8 +355,8 @@ function VolunteerMissionMap({ activeMission, volunteerProfile, isFullscreen, se
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>ETA</span>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--green-400)', fontFamily: 'var(--font-mono)' }}>
-                {routeDuration >= 3600 
-                  ? `${Math.floor(routeDuration / 3600)}h ${Math.round((routeDuration % 3600) / 60)}m` 
+                {routeDuration >= 3600
+                  ? `${Math.floor(routeDuration / 3600)}h ${Math.round((routeDuration % 3600) / 60)}m`
                   : `${Math.ceil(routeDuration / 60)} mins`}
               </span>
             </div>
@@ -456,11 +456,11 @@ function VolunteerMissionMap({ activeMission, volunteerProfile, isFullscreen, se
               : floodedSensors
             ).map((f, idx) => {
               if (f.lat === undefined || f.lat === null || f.lng === undefined || f.lng === null) return null;
-              
+
               const currentLevel = f.waterLevel || f.current_water_level || 0;
               const hasWater = currentLevel > 5;
               const levelText = `${Math.round(currentLevel * 10) / 10} cm`;
-              
+
               let mapColor = '#22c55e'; // default green
               if (f.warning_water_status === 'danger' || currentLevel > 50) {
                 mapColor = '#ef4444'; // red
@@ -638,7 +638,7 @@ export default function VolunteerMissions() {
       { label: "Rescue request recorded", time: reqTime, status: 'done' },
       { label: "Accepted rescue assignment", time: reqTime, status: isAccepted ? 'done' : 'pending' },
       { label: "Moving to the scene", time: isInProgress ? 'Active' : '—', status: isArrived ? 'done' : (isInProgress ? 'active' : 'pending') },
-      { label: "Arrive and assist the victim", time: isArrived ? 'Arrived' : '—', status: isArrived ? 'active' : 'pending' },
+      { label: "Arrive and assist the rescuee", time: isArrived ? 'Arrived' : '—', status: isArrived ? 'active' : 'pending' },
       { label: "Confirm task completion", time: '—', status: 'pending' }
     ];
   }, [activeMission]);
@@ -920,12 +920,12 @@ export default function VolunteerMissions() {
                   border: '1px solid rgba(34,211,238,0.3)',
                   fontWeight: 600
                 }}
-                title="Trở về khung thông tin"
+                title="Back to Details"
               >
                 ← Back to Details
               </button>
               <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                Live Chat ({selected.victim || 'Victim'})
+                Live Chat ({selected.victim || 'Rescuee'})
               </div>
             </div>
             <button
@@ -945,11 +945,11 @@ export default function VolunteerMissions() {
               targetUser={{
                 id: selected.requesterUserId || selected.userId || 'unknown_user',
                 name: selected.victim || 'Customer',
-                role: 'Requester (Victim)',
+                role: 'Requester (Rescuee)',
                 phone: selected.phone || 'Not provided'
               }}
               missionId={selected.id}
-              title={`Live Chat with ${selected.victim || 'Victim'}`}
+              title={`Live Chat with ${selected.victim || 'Rescuee'}`}
               defaultMinimized={false}
               hideHeader={true}
               isEnded={selected.status === 'resolved' || selected.status === 'cancelled' || selected.status === 'completed'}
@@ -1018,9 +1018,6 @@ export default function VolunteerMissions() {
             <span style={{ fontWeight: 700, color: 'var(--cyan-400)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <ShieldAlert size={14} /> {selected.type}
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              ID: #{selected.id?.slice(-6) || selected.id}
-            </span>
           </div>
           <div style={{
             fontSize: '0.82rem',
@@ -1044,14 +1041,14 @@ export default function VolunteerMissions() {
           borderRadius: 'var(--r-md)',
           border: '1px solid var(--border-dim)',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
           gap: '8px 12px',
           fontSize: '0.78rem'
         }}>
           {/* Victim */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <User size={13} color="var(--cyan-400)" style={{ flexShrink: 0 }} />
-            <span style={{ color: 'var(--text-muted)' }}>Victim:</span>
+            <span style={{ color: 'var(--text-muted)' }}>Rescuee:</span>
             <strong style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.victim}</strong>
           </div>
 
@@ -1059,7 +1056,7 @@ export default function VolunteerMissions() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
               <Phone size={13} color="var(--green-400)" style={{ flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-muted)' }}>SĐT:</span>
+              <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
               <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.phone}</strong>
             </div>
             {selected.phone && selected.phone !== 'Not provided' && (
@@ -1067,7 +1064,22 @@ export default function VolunteerMissions() {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigator.clipboard.writeText(selected.phone);
+                  try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(selected.phone);
+                    } else {
+                      const textArea = document.createElement("textarea");
+                      textArea.value = selected.phone;
+                      textArea.style.position = "fixed";
+                      document.body.appendChild(textArea);
+                      textArea.focus();
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                    }
+                  } catch (err) {
+                    console.error("Failed to copy phone number:", err);
+                  }
                   setCopiedPhoneId(selected.id);
                   setTimeout(() => setCopiedPhoneId(null), 2000);
                 }}
@@ -1083,17 +1095,11 @@ export default function VolunteerMissions() {
                 }}
                 title="Copy phone number"
               >
-                {copiedPhoneId === selected.id ? <CheckCircle size={11} /> : <Copy size={11} />} {copiedPhoneId === selected.id ? 'Copied' : 'Copy SĐT'}
+                {copiedPhoneId === selected.id ? <CheckCircle size={11} /> : <Copy size={11} />} {copiedPhoneId === selected.id ? 'Copied' : 'Copy Phone'}
               </button>
             )}
           </div>
 
-          {/* Distance & ETA */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Navigation size={13} color="var(--orange-400)" style={{ flexShrink: 0 }} />
-            <span style={{ color: 'var(--text-muted)' }}>Dist/ETA:</span>
-            <strong style={{ color: 'var(--text-primary)' }}>{selected.distance} · {selected.eta}</strong>
-          </div>
 
           {/* Time */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1172,7 +1178,7 @@ export default function VolunteerMissions() {
                 borderRadius: 'var(--r-sm)',
                 fontWeight: 600
               }}>
-                Waiting for the victim to confirm safety...
+                Waiting for the rescuee to confirm safety...
               </div>
               <button type="button" className="btn btn-success" style={{ height: 34, fontWeight: 700, fontSize: '0.8rem' }} onClick={() => completeMission(selected.id)}>
                 <CheckCircle size={14} /> Confirm task completion
@@ -1239,7 +1245,8 @@ export default function VolunteerMissions() {
                 fontSize: '0.82rem',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
+                paddingLeft: 16,
                 gap: 8,
                 background: 'linear-gradient(135deg, var(--cyan-500), var(--blue-600))',
                 color: '#fff',
@@ -1308,9 +1315,6 @@ export default function VolunteerMissions() {
             >
               <Navigation size={13} /> Mission tracking
             </button>
-            <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
-              <MessageSquare size={13} /> Field report
-            </button>
             <button className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>
               <LifeBuoy size={13} /> Emergency instructions
             </button>
@@ -1324,9 +1328,7 @@ export default function VolunteerMissions() {
                 <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>Loading active rescue missions...</div>
               </div>
             ) : (
-              isMobile && selected ? (
-                renderDetailPanel()
-              ) : (
+              (
                 <div>
                   {/* Search bar */}
                   <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1350,159 +1352,157 @@ export default function VolunteerMissions() {
                           border: '1px solid var(--border-dim)'
                         }}
                       />
-                      <Search 
-                        size={14} 
-                        style={{ 
-                          position: 'absolute', 
-                          left: 12, 
-                          top: '50%', 
-                          transform: 'translateY(-50%)', 
+                      <Search
+                        size={14}
+                        style={{
+                          position: 'absolute',
+                          left: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
                           opacity: 0.5,
                           color: 'var(--text-muted)'
-                        }} 
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Filter */}
                   <div className="flex items-center gap-3" style={{ marginBottom: 14, flexWrap: 'wrap' }}>
-                  <Filter size={15} color="var(--text-muted)" />
-                  {[
-                    { key: 'all', label: "All" },
-                    { key: 'pending', label: "Waiting for routing" },
-                    { key: 'accepted', label: "Received" },
-                    { key: 'in_progress', label: "Processing" },
-                    { key: 'resolved', label: "Complete" },
-                    { key: 'cancelled', label: "Cancelled" },
-                  ].map(f => (
-                    <button
-                      key={f.key}
-                      className={`btn btn-sm ${filter === f.key ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => { setFilter(f.key); setPage(1); }}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {filtered.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '0.88rem', border: '1px dashed var(--border-dim)', borderRadius: 'var(--r-md)' }}>
-                      No rescue requests found.
-                    </div>
-                  ) : (
-                    filtered.map(s => (
-                      <div
-                        key={s.id}
-                        className="card"
-                        style={{
-                          padding: '14px 18px',
-                          borderLeft: severityBg[s.severity] || '3px solid var(--border-default)',
-                          cursor: 'pointer',
-                          background: selected?.id === s.id ? 'rgba(61,125,176,0.1)' : undefined,
-                          transition: 'background 0.15s',
-                        }}
-                        onClick={() => setSelected(s)}
+                    <Filter size={15} color="var(--text-muted)" />
+                    {[
+                      { key: 'all', label: "All" },
+                      { key: 'pending', label: "Waiting for routing" },
+                      { key: 'accepted', label: "Received" },
+                      { key: 'in_progress', label: "Processing" },
+                      { key: 'resolved', label: "Complete" },
+                      { key: 'cancelled', label: "Cancelled" },
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        className={`btn btn-sm ${filter === f.key ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => { setFilter(f.key); setPage(1); }}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div style={{ flex: 1 }}>
-                            <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 6 }}>
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.id}</span>
-                              {statusBadge[s.status]}
-                              <span className={`badge ${s.severity === 'critical' ? 'badge-red' : s.severity === 'high' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '0.62rem' }}>
-                                {s.severity.toUpperCase()}
-                              </span>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                                <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />{s.time}
-                              </span>
-                            </div>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 3 }}>
-                              <MapPin size={13} style={{ display: 'inline', marginRight: 4, color: 'var(--text-muted)' }} />
-                              {s.location}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                              Victim: {s.victim} · Way: {s.distance} · ETA: {s.eta}
-                            </div>
-                            {s.assignedVolunteerName && (
-                              <div style={{ fontSize: '0.75rem', color: 'var(--orange-400)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <ShieldAlert size={12} />
-                                <span>
-                                  {currentUser && s.assignedVolunteerUserId === currentUser._id
-                                    ? 'Assigned to you'
-                                    : `Assigned to: ${s.assignedVolunteerName}`}
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {filtered.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '0.88rem', border: '1px dashed var(--border-dim)', borderRadius: 'var(--r-md)' }}>
+                        No rescue requests found.
+                      </div>
+                    ) : (
+                      filtered.map(s => (
+                        <div
+                          key={s.id}
+                          className="card"
+                          style={{
+                            padding: '14px 18px',
+                            borderLeft: severityBg[s.severity] || '3px solid var(--border-default)',
+                            cursor: 'pointer',
+                            background: selected?.id === s.id ? 'rgba(61,125,176,0.1)' : undefined,
+                            transition: 'background 0.15s',
+                          }}
+                          onClick={() => setSelected(s)}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div style={{ flex: 1 }}>
+                              <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 6 }}>
+                                {statusBadge[s.status]}
+                                <span className={`badge ${s.severity === 'critical' ? 'badge-red' : s.severity === 'high' ? 'badge-orange' : 'badge-green'}`} style={{ fontSize: '0.62rem' }}>
+                                  {s.severity.toUpperCase()}
+                                </span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                                  <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />{s.time}
                                 </span>
                               </div>
-                            )}
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 3 }}>
+                                <MapPin size={13} style={{ display: 'inline', marginRight: 4, color: 'var(--text-muted)' }} />
+                                {s.location}
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                Rescuee: {s.victim}
+                              </div>
+                              {s.assignedVolunteerName && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--orange-400)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <ShieldAlert size={12} />
+                                  <span>
+                                    {currentUser && s.assignedVolunteerUserId === currentUser._id
+                                      ? 'Assigned to you'
+                                      : `Assigned to: ${s.assignedVolunteerName}`}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <ChevronRight size={16} color="var(--text-muted)" />
                           </div>
-                          <ChevronRight size={16} color="var(--text-muted)" />
                         </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between" style={{ marginTop: 16, padding: '8px 4px', flexWrap: 'wrap', gap: 12 }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        Showing <strong style={{ color: 'var(--text-primary)' }}>{totalMissions === 0 ? 0 : (page - 1) * limit + 1}-{Math.min(page * limit, totalMissions)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalMissions}</strong> missions
+                      </span>
+                      <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          style={{ opacity: page === 1 ? 0.5 : 1 }}
+                        >
+                          Previous
+                        </button>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                          Page
+                          <input
+                            type="number"
+                            min="1"
+                            max={totalPages}
+                            value={pageInput}
+                            onChange={(e) => {
+                              const valStr = e.target.value;
+                              setPageInput(valStr);
+                              const val = parseInt(valStr);
+                              if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                                setPage(val);
+                              }
+                            }}
+                            onBlur={() => {
+                              setPageInput(page.toString());
+                            }}
+                            style={{
+                              width: 50,
+                              textAlign: 'center',
+                              background: 'rgba(0,0,0,0.5)',
+                              border: '1px solid var(--border-dim)',
+                              borderRadius: 4,
+                              color: 'var(--cyan-400)',
+                              fontWeight: 700,
+                              padding: '2px 0',
+                              fontSize: '0.78rem'
+                            }}
+                          />
+                          of {totalPages}
+                        </span>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          style={{ opacity: page === totalPages ? 0.5 : 1 }}
+                        >
+                          Next
+                        </button>
                       </div>
-                    ))
+                    </div>
                   )}
                 </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between" style={{ marginTop: 16, padding: '8px 4px', flexWrap: 'wrap', gap: 12 }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      Showing <strong style={{ color: 'var(--text-primary)' }}>{totalMissions === 0 ? 0 : (page - 1) * limit + 1}-{Math.min(page * limit, totalMissions)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalMissions}</strong> missions
-                    </span>
-                    <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
-                      <button 
-                        className="btn btn-sm btn-ghost" 
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        style={{ opacity: page === 1 ? 0.5 : 1 }}
-                      >
-                        Previous
-                      </button>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                        Page 
-                        <input 
-                          type="number" 
-                          min="1" 
-                          max={totalPages} 
-                          value={pageInput}
-                          onChange={(e) => {
-                            const valStr = e.target.value;
-                            setPageInput(valStr);
-                            const val = parseInt(valStr);
-                            if (!isNaN(val) && val >= 1 && val <= totalPages) {
-                              setPage(val);
-                            }
-                          }}
-                          onBlur={() => {
-                            setPageInput(page.toString());
-                          }}
-                          style={{
-                            width: 50,
-                            textAlign: 'center',
-                            background: 'rgba(0,0,0,0.5)',
-                            border: '1px solid var(--border-dim)',
-                            borderRadius: 4,
-                            color: 'var(--cyan-400)',
-                            fontWeight: 700,
-                            padding: '2px 0',
-                            fontSize: '0.78rem'
-                          }}
-                        />
-                        of {totalPages}
-                      </span>
-                      <button 
-                        className="btn btn-sm btn-ghost" 
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                        style={{ opacity: page === totalPages ? 0.5 : 1 }}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          )
-        )}
+              )
+            ))}
         </div>
 
         {/* Right Column: Detail Panel */}
@@ -1516,11 +1516,11 @@ export default function VolunteerMissions() {
       {/* Tab: Track Mission */}
       {activeTab === 'track' && (
         <div style={{ display: 'grid', gap: 16 }}>
-          <div className="grid" style={{ gridTemplateColumns: '1.4fr 0.6fr', gap: 16 }}>
+          <div className="grid" style={{ gridTemplateColumns: isMobile ? '1fr' : '1.4fr 0.6fr', gap: 16 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-dim)' }}>
                 <div className="section-title">
-                  Mission tracking map · {activeMission ? activeMission.id : 'No active mission'}
+                  Mission tracking map
                 </div>
               </div>
               <VolunteerMissionMap
@@ -1584,7 +1584,7 @@ export default function VolunteerMissions() {
                         borderRadius: 'var(--r-sm)',
                         fontWeight: 600
                       }}>
-                        Waiting for the victim to confirm safety...
+                         Waiting for the rescuee to confirm safety...
                       </div>
                       <button
                         className="btn btn-success"
@@ -1605,78 +1605,18 @@ export default function VolunteerMissions() {
               <RescueSessionChat
                 targetUser={{
                   id: activeMission.requesterUserId,
-                  name: activeMission.victim || 'Victim',
-                  role: 'Requester (Victim)',
+                  name: activeMission.victim || 'Rescuee',
+                  role: 'Requester (Rescuee)',
                   phone: activeMission.phone || 'Not provided'
                 }}
                 missionId={activeMission.id}
-                title={`Live Chat with Victim (${activeMission.victim || 'Customer'})`}
+                title={`Live Chat with Rescuee (${activeMission.victim || 'Customer'})`}
               />
             </div>
           )}
         </div>
       )}
 
-      {/* Tab: Report */}
-      {activeTab === 'report' && (
-        <div className="grid" style={{ gridTemplateColumns: '1.1fr 0.9fr', gap: 16 }}>
-          <div className="card p-6">
-            <div className="section-title" style={{ marginBottom: 16 }}>Field report</div>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div className="input-group">
-                <MapPin size={15} className="input-icon" />
-                <input className="input" placeholder="Site location..." defaultValue="District 12 – Hiep Thanh" />
-              </div>
-              <div className="flex gap-3">
-                <select className="input" style={{ maxWidth: 200 }}>
-                  <option>On the move</option>
-                  <option>Arrive</option>
-                  <option>Supporting</option>
-                  <option>Complete</option>
-                  <option>Need more force</option>
-                </select>
-                <input className="input" placeholder="SOS ID (VD: SOS-001)" defaultValue="SOS-001" />
-              </div>
-              <textarea
-                className="input"
-                rows={5}
-                placeholder="Describe the scene situation, number of victims, what additional resources are needed..."
-                value={reportText}
-                onChange={e => setReportText(e.target.value)}
-              />
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn btn-ghost btn-sm">📷 Add photo</button>
-                <button className="btn btn-ghost btn-sm">📍 Automatic GPS</button>
-              </div>
-              <button className="btn btn-primary" onClick={handleSendReport}>
-                <Send size={14} /> Submit report
-              </button>
-              {reportSent && (
-                <div className="flex items-center gap-2" style={{ color: 'var(--green-400)', fontWeight: 600, fontSize: '0.85rem' }}>
-                  <CheckCircle size={14} /> Report sent successfully
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="section-title" style={{ marginBottom: 12 }}>Reporting instructions</div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {[
-                "Update status as soon as you arrive at the scene.",
-                "Clearly state the number of victims and health status.",
-                "Take photos to document the situation if possible.",
-                "Report immediately if additional support is needed.",
-                "Confirmation is complete after the victim is brought to safety.",
-              ].map((tip, i) => (
-                <div key={i} className="alert-banner info" style={{ margin: 0 }}>
-                  <AlertTriangle size={14} color="var(--cyan-400)" style={{ flexShrink: 0 }} />
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{tip}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tab: Info Hub */}
       {activeTab === 'info' && (
@@ -1743,6 +1683,38 @@ export default function VolunteerMissions() {
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', wordBreak: 'break-word', lineHeight: 1.4, minWidth: 0 }}>
                 In case of danger to life, priority should be given to contacting the dispatch center before acting independently.
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Details Modal */}
+      {isMobile && selected && activeTab === 'list' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+          backdropFilter: 'blur(4px)'
+        }} onClick={() => setSelected(null)}>
+          <div style={{
+            background: 'var(--bg-elevated)',
+            borderRadius: 'var(--r-lg)',
+            border: '1px solid var(--border-dim)',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: 16 }}>
+              {renderDetailPanel()}
             </div>
           </div>
         </div>

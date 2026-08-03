@@ -311,7 +311,7 @@ export default function UserTopBar({
                   style={{ padding: '10px 16px', textAlign: 'center', background: 'var(--bg-card-hover)', borderTop: '1px solid var(--border-dim)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--cyan-400)' }}
                   onClick={() => { setShowNotifDropdown(false); if (onNavigate) onNavigate('user-notifications'); }}
                 >
-                  Xem tất cả thông báo
+                  View all notifications
                 </div>
               </div>
             )}

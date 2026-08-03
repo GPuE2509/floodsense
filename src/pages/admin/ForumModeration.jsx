@@ -581,7 +581,8 @@ export default function ForumModeration() {
     fetchAllCommentsRef.current();
     fetchReportedCommentsRef.current();
 
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+    // Set up WebSocket for real-time forum updates with auto-reconnect
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
     let ws;
     let reconnectTimeout;
 

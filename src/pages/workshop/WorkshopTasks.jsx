@@ -10,6 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import GoongMaplibreLayer from '../../components/common/GoongMaplibreLayer';
 import { apiService } from '../../services/apiService';
 import { useNavigate } from 'react-router-dom';
+import RescueSessionChat from '../../components/common/RescueSessionChat';
 
 const getReportTypeLabel = (type) => {
   if (!type) return 'Unknown';
@@ -281,7 +282,7 @@ function WorkshopMissionMap({ activeTask, isFullscreen, setIsFullscreen }) {
         onClick={() => setAutoCenter(true)}
         style={{
           position: 'absolute',
-          top: 12,
+          bottom: 12,
           right: 12,
           zIndex: 1000,
           background: autoCenter ? 'var(--cyan-400)' : 'rgba(0,0,0,0.75)',
@@ -543,6 +544,13 @@ const statusBadge = {
 export default function WorkshopTasks() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [mechanics, setMechanics] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -725,6 +733,134 @@ export default function WorkshopTasks() {
     completed: stats.completed
   };
 
+  const renderDetailPanel = () => {
+    if (!selected) return null;
+    return (
+      <div className="card p-6" style={{ position: isMobile ? 'static' : 'sticky', top: 20 }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+          <div className="section-title">Single detail</div>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}><XCircle size={14} /></button>
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ padding: '10px 14px', background: 'rgba(217,119,6,0.06)', borderRadius: 'var(--r-md)', border: '1px solid rgba(217,119,6,0.2)' }}>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>"{selected.note}"</div>
+          </div>
+          {[
+            { icon: Wrench, label: "Service", value: selected.service },
+            { 
+              icon: Wrench, 
+              label: "Total Price", 
+              value: (
+                <span>
+                  {selected.total_price ? `${selected.total_price.toLocaleString('vi-VN')}₫` : '0₫'}
+                  <span className={`badge ${selected.isPaid ? 'badge-green' : 'badge-orange'}`} style={{ marginLeft: 8, fontSize: '0.65rem' }}>
+                    {selected.isPaid ? 'Paid' : 'Unpaid'}
+                  </span>
+                </span>
+              )
+            },
+            { icon: User, label: "Customer", value: selected.customer },
+            { icon: Phone, label: "Phone number", value: selected.phone },
+            { icon: MapPin, label: "Location", value: selected.location },
+            (selected.status !== 'completed' && selected.status !== 'cancelled') ? { icon: Navigation, label: "Distance", value: `${selected.distance} (ETA: ${selected.eta})` } : null,
+            { icon: Clock, label: "Set time", value: selected.time },
+          ].filter(Boolean).map(row => {
+            const Icon = row.icon;
+            return (
+              <div key={row.label} className="flex items-start gap-3">
+                <Icon size={14} color="var(--text-muted)" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 1 }}>{row.label}</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500 }}>{row.value}</div>
+                </div>
+              </div>
+            );
+          })}
+          {selected.mechanic && (
+            <div className="alert-banner" style={{ margin: 0, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <CheckCircle size={14} color="var(--green-400)" />
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>Assignment: <strong>{selected.mechanic}</strong></div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-dim)', display: 'grid', gap: 8 }}>
+            {selected.status === 'pending' && (
+              isOwner ? (
+                <button className="btn btn-sm" style={{ background: 'rgba(217,119,6,0.15)', color: '#f59e0b', border: '1px solid rgba(217,119,6,0.3)' }} onClick={() => setAssignModal(selected.id)}>
+                  <User size={13} /> Assigning workers
+                </button>
+              ) : (
+                <button className="btn btn-primary btn-sm" onClick={() => assign(selected.id, currentUserId)}>
+                  <User size={13} /> Accept Request
+                </button>
+              )
+            )}
+            {selected.status === 'assigned' && (
+              <button className="btn btn-primary btn-sm" onClick={() => startTask(selected.id)}>
+                <Navigation size={13} /> Start moving
+              </button>
+            )}
+            {selected.status === 'in_progress' && (
+              <button className="btn btn-primary btn-sm" style={{ background: 'var(--cyan-400)', color: '#080d16' }} onClick={() => arriveTask(selected.id)}>
+                <MapPin size={13} /> Arrived & repairing
+              </button>
+            )}
+            {selected.status === 'arrived' && (
+              <button className="btn btn-success btn-sm" onClick={() => completeTask(selected.id)}>
+                <CheckCircle size={13} /> Confirm completion
+              </button>
+            )}
+            {selected.status === 'completed' && !selected.isPaid && (
+              <button className="btn btn-primary btn-sm" onClick={() => confirmPayment(selected.id)}>
+                <CheckCircle size={13} /> Confirm payment
+              </button>
+            )}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                if (selected.requesterUserId) {
+                  localStorage.setItem('pending_chat_user', JSON.stringify({
+                    id: selected.requesterUserId,
+                    name: selected.customer || 'Customer',
+                    role: 'User'
+                  }));
+                  navigate('/notifications');
+                }
+              }}
+            >
+              <MessageSquare size={12} /> Chat with customer
+            </button>
+          </div>
+
+          {/* Assign Modal */}
+          {assignModal === selected.id && isOwner && (
+            <div style={{ padding: '12px', background: 'rgba(217,119,6,0.06)', borderRadius: 'var(--r-md)', border: '1px solid rgba(217,119,6,0.25)' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', marginBottom: 8 }}>Choose an assigner:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                <button className="btn btn-primary btn-sm" onClick={() => assign(selected.id, currentUserId)}>
+                  Assign to Myself (Owner)
+                </button>
+                {(() => {
+                  const activeStaff = mechanics.filter(m => m.isOnDuty && m.status === 'Available' && (m.user_id?._id || m.user_id) !== currentUserId);
+                  return activeStaff.map(m => {
+                    const name = m.user_id?.full_name || 'Staff';
+                    const userId = m.user_id?._id || m.user_id;
+                    return (
+                      <button key={userId} className="btn btn-ghost btn-sm" onClick={() => assign(selected.id, userId)}>
+                        {name}
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="page-enter">
       <div className="page-header">
@@ -762,14 +898,11 @@ export default function WorkshopTasks() {
         >
           <Navigation size={13} /> Mission tracking
         </button>
-        <button className={`tab-btn ${activeTab === 'reply' ? 'active' : ''}`} onClick={() => setActiveTab('reply')}>
-          <MessageSquare size={13} /> Guest feedback
-        </button>
       </div>
 
       {/* Tab: List */}
       {activeTab === 'list' && (
-        <div className="grid" style={{ gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: 16 }}>
+        <div className="grid" style={{ gridTemplateColumns: (!isMobile && selected) ? '1fr 1fr' : '1fr', gap: 16 }}>
           <div>
             {/* Search bar */}
             <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -855,7 +988,7 @@ export default function WorkshopTasks() {
                           )}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          <User size={10} style={{ display: 'inline', marginRight: 3 }} />{task.customer} · <MapPin size={10} style={{ display: 'inline', marginRight: 3 }} />{task.location} · {task.distance}
+                          <User size={10} style={{ display: 'inline', marginRight: 3 }} />{task.customer} · <MapPin size={10} style={{ display: 'inline', marginRight: 3 }} />{task.location}{(task.status !== 'completed' && task.status !== 'cancelled') && ` · ${task.distance}`}
                         </div>
                         {task.mechanic && <div style={{ fontSize: '0.72rem', color: 'var(--green-400)', marginTop: 3 }}>✓ Workers: {task.mechanic}</div>}
                       </div>
@@ -927,265 +1060,148 @@ export default function WorkshopTasks() {
           </div>
 
           {/* Detail panel */}
-          {selected && (
-            <div className="card p-6" style={{ position: 'sticky', top: 20 }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-                <div className="section-title">Single detail</div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}><XCircle size={14} /></button>
-              </div>
-              <div style={{ display: 'grid', gap: 10 }}>
-                <div style={{ padding: '10px 14px', background: 'rgba(217,119,6,0.06)', borderRadius: 'var(--r-md)', border: '1px solid rgba(217,119,6,0.2)' }}>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>"{selected.note}"</div>
+          {!isMobile && selected && renderDetailPanel()}
+        </div>
+      )}
+
+
+      {/* Tab: Track Mission */}
+      {activeTab === 'track' && activeTask && (
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div className="grid" style={{ gridTemplateColumns: isMobile ? '1fr' : '1.4fr 0.6fr', gap: 16 }}>
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-dim)' }}>
+                <div className="section-title">
+                  Mission tracking map
                 </div>
+              </div>
+              <WorkshopMissionMap
+                activeTask={activeTask}
+                isFullscreen={isFullscreen}
+                setIsFullscreen={setIsFullscreen}
+              />
+            </div>
+
+            <div className="card p-6">
+              <div className="section-title" style={{ marginBottom: 14 }}>Mission progress</div>
+              <div style={{ display: 'grid', gap: 14 }}>
                 {[
-                  { icon: Wrench, label: "Service", value: selected.service },
-                  { 
-                    icon: Wrench, 
-                    label: "Total Price", 
-                    value: (
-                      <span>
-                        {selected.total_price ? `${selected.total_price.toLocaleString('vi-VN')}₫` : '0₫'}
-                        <span className={`badge ${selected.isPaid ? 'badge-green' : 'badge-orange'}`} style={{ marginLeft: 8, fontSize: '0.65rem' }}>
-                          {selected.isPaid ? 'Paid' : 'Unpaid'}
-                        </span>
-                      </span>
-                    )
+                  { time: activeTask.time, label: "Request recorded", status: 'done' },
+                  { time: 'Done', label: "Staff assigned", status: 'done' },
+                  {
+                    time: (activeTask.status === 'in_progress') ? 'Active' : ((activeTask.status === 'arrived' || activeTask.status === 'completed') ? 'Done' : '—'),
+                    label: "Moving to scene",
+                    status: activeTask.status === 'in_progress' ? 'active' : ((activeTask.status === 'arrived' || activeTask.status === 'completed') ? 'done' : 'pending')
                   },
-                  { icon: User, label: "Customer", value: selected.customer },
-                  { icon: Phone, label: "Phone number", value: selected.phone },
-                  { icon: MapPin, label: "Location", value: selected.location },
-                  { icon: Navigation, label: "Distance", value: `${selected.distance} (ETA: ${selected.eta})` },
-                  { icon: Clock, label: "Set time", value: selected.time },
-                ].map(row => {
-                  const Icon = row.icon;
-                  return (
-                    <div key={row.label} className="flex items-start gap-3">
-                      <Icon size={14} color="var(--text-muted)" style={{ marginTop: 2, flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 1 }}>{row.label}</div>
-                        <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500 }}>{row.value}</div>
+                  {
+                    time: activeTask.status === 'arrived' ? 'Active' : (activeTask.status === 'completed' ? 'Done' : '—'),
+                    label: "Arrived & repairing",
+                    status: activeTask.status === 'arrived' ? 'active' : (activeTask.status === 'completed' ? 'done' : 'pending')
+                  },
+                  {
+                    time: activeTask.status === 'completed' ? 'Done' : '—',
+                    label: "Confirm task completion",
+                    status: activeTask.status === 'completed' ? 'done' : 'pending'
+                  }
+                ].map((step, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%', marginTop: 4, flexShrink: 0,
+                      background: step.status === 'done' ? 'var(--green-400)' : step.status === 'active' ? 'var(--orange-400)' : 'var(--bg-elevated)',
+                      border: step.status === 'pending' ? '2px solid var(--border-dim)' : 'none',
+                      boxShadow: step.status === 'active' ? '0 0 10px var(--orange-400)' : 'none',
+                      animation: step.status === 'active' ? 'blink 1.5s ease-in-out infinite' : 'none',
+                    }} />
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: step.status === 'active' ? 700 : 500, color: step.status === 'pending' ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                        {step.label}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        <Clock size={10} style={{ display: 'inline', marginRight: 3 }} />{step.time}
                       </div>
                     </div>
-                  );
-                })}
-                {selected.mechanic && (
-                  <div className="alert-banner" style={{ margin: 0, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <CheckCircle size={14} color="var(--green-400)" />
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>Assignment: <strong>{selected.mechanic}</strong></div>
                   </div>
-                )}
-
-                {/* Actions */}
-                <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-dim)', display: 'grid', gap: 8 }}>
-                  {selected.status === 'pending' && (
-                    isOwner ? (
-                      <button className="btn btn-sm" style={{ background: 'rgba(217,119,6,0.15)', color: '#f59e0b', border: '1px solid rgba(217,119,6,0.3)' }} onClick={() => setAssignModal(selected.id)}>
-                        <User size={13} /> Assigning workers
-                      </button>
-                    ) : (
-                      <button className="btn btn-primary btn-sm" onClick={() => assign(selected.id, currentUserId)}>
-                        <User size={13} /> Accept Request
-                      </button>
-                    )
-                  )}
-                  {selected.status === 'assigned' && (
-                    <button className="btn btn-primary btn-sm" onClick={() => startTask(selected.id)}>
-                      <Navigation size={13} /> Start moving
-                    </button>
-                  )}
-                  {selected.status === 'in_progress' && (
-                    <button className="btn btn-primary btn-sm" style={{ background: 'var(--cyan-400)', color: '#080d16' }} onClick={() => arriveTask(selected.id)}>
-                      <MapPin size={13} /> Arrived & repairing
-                    </button>
-                  )}
-                  {selected.status === 'arrived' && (
-                    <button className="btn btn-success btn-sm" onClick={() => completeTask(selected.id)}>
-                      <CheckCircle size={13} /> Confirm completion
-                    </button>
-                  )}
-                  {selected.status === 'completed' && !selected.isPaid && (
-                    <button className="btn btn-primary btn-sm" onClick={() => confirmPayment(selected.id)}>
-                      <CheckCircle size={13} /> Confirm payment
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => {
-                      if (selected.requesterUserId) {
-                        localStorage.setItem('pending_chat_user', JSON.stringify({
-                          id: selected.requesterUserId,
-                          name: selected.customer || 'Customer',
-                          role: 'User'
-                        }));
-                        navigate('/notifications');
-                      }
-                    }}
-                  >
-                    <MessageSquare size={12} /> Chat with customer
-                  </button>
-                </div>
-
-                {/* Assign Modal */}
-                {assignModal === selected.id && isOwner && (
-                  <div style={{ padding: '12px', background: 'rgba(217,119,6,0.06)', borderRadius: 'var(--r-md)', border: '1px solid rgba(217,119,6,0.25)' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', marginBottom: 8 }}>Choose an assigner:</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => assign(selected.id, currentUserId)}>
-                        Assign to Myself (Owner)
-                      </button>
-                      {(() => {
-                        const activeStaff = mechanics.filter(m => m.isOnDuty && m.status === 'Available' && (m.user_id?._id || m.user_id) !== currentUserId);
-                        return activeStaff.map(m => {
-                          const name = m.user_id?.full_name || 'Staff';
-                          const userId = m.user_id?._id || m.user_id;
-                          return (
-                            <button key={userId} className="btn btn-ghost btn-sm" onClick={() => assign(selected.id, userId)}>
-                              {name}
-                            </button>
-                          );
-                        });
-                      })()}
-                    </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setAssignModal(null)}>Cancel</button>
-                  </div>
-                )}
+                ))}
               </div>
+              
+              <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-dim)' }}>
+                {activeTask.status === 'assigned' ? (
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%' }}
+                    onClick={() => startTask(activeTask.id)}
+                  >
+                    <Navigation size={14} /> Start moving to scene
+                  </button>
+                ) : activeTask.status === 'in_progress' ? (
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', background: 'var(--cyan-400)', color: '#080d16' }}
+                    onClick={() => arriveTask(activeTask.id)}
+                  >
+                    <MapPin size={14} /> Arrived & repairing
+                  </button>
+                ) : activeTask.status === 'arrived' ? (
+                  <button
+                    className="btn btn-success"
+                    style={{ width: '100%' }}
+                    onClick={() => completeTask(activeTask.id)}
+                  >
+                    <CheckCircle size={14} /> Confirm task completion
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Embedded Real-time Chat Box */}
+          {activeTask.requesterUserId && (
+            <div id="rescue-live-chat" style={{ width: '100%' }}>
+              <RescueSessionChat
+                targetUser={{
+                  id: activeTask.requesterUserId,
+                  name: activeTask.customer || 'Customer',
+                  role: 'User',
+                  phone: activeTask.phone,
+                  avatarUrl: activeTask.avatarUrl
+                }}
+                missionId={activeTask.id}
+                title={`Live Chat with Customer (${activeTask.customer || 'Customer'})`}
+                isEnded={activeTask.status === 'completed' || activeTask.status === 'resolved' || activeTask.status === 'cancelled'}
+                isCancelled={activeTask.status === 'cancelled'}
+              />
             </div>
           )}
         </div>
       )}
 
-      {/* Tab: Reply */}
-      {activeTab === 'reply' && (
-        <div className="grid grid-2" style={{ gap: 16 }}>
-          <div className="card p-6">
-            <div className="section-title" style={{ marginBottom: 14 }}>Customer feedback</div>
-            <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
-              {[
-                { customer: "Nguyen Van An", review: "Workshop Staff arrived quickly, handled professionally. Very satisfied!", rating: 5, time: '14:50', taskId: 'WO-040' },
-                { customer: "Tran Thi Binh", review: "The price is a bit high but the service is good and the Workshop Staff are enthusiastic.", rating: 4, time: '13:20', taskId: 'WO-038' },
-              ].map((rev, i) => (
-                <div key={i} style={{ padding: '12px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)', background: 'rgba(61,125,176,0.04)' }}>
-                  <div className="flex items-start justify-between" style={{ marginBottom: 6 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{rev.customer} – {rev.taskId}</div>
-                    <div style={{ display: 'flex', gap: 2 }}>
-                      {[1, 2, 3, 4, 5].map(s => <span key={s} style={{ color: s <= rev.rating ? '#f59e0b' : 'var(--border-default)', fontSize: '0.85rem' }}>★</span>)}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontStyle: 'italic' }}>"{rev.review}"</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 10 }}><Clock size={10} style={{ display: 'inline', marginRight: 3 }} />{rev.time}</div>
-                  <textarea className="input" rows={2} placeholder="Customer feedback..." value={replyText} onChange={e => setReplyText(e.target.value)} />
-                  <button className="btn btn-sm" style={{ marginTop: 8, background: 'rgba(217,119,6,0.15)', color: '#f59e0b', border: '1px solid rgba(217,119,6,0.3)' }} onClick={() => { setReplySent(true); setReplyText(''); setTimeout(() => setReplySent(false), 2000); }}>
-                    <Send size={12} /> Send feedback
-                  </button>
-                  {replySent && <div style={{ fontSize: '0.75rem', color: 'var(--green-400)', marginTop: 4, fontWeight: 600 }}><CheckCircle size={11} style={{ display: 'inline', marginRight: 3 }} />Sent</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="section-title" style={{ marginBottom: 14 }}>Feedback instructions</div>
-            {[
-              "Respond within 24 hours to maintain high scores.",
-              "Thank customers for good reviews.",
-              "Explain clearly if there is a complaint about price or service.",
-              "We invite you to return to the workshop next time.",
-              "Don't argue harshly - resolve peacefully.",
-            ].map((tip, i) => (
-              <div key={i} className="alert-banner info" style={{ margin: '0 0 8px' }}>
-                <AlertTriangle size={13} color="var(--cyan-400)" style={{ flexShrink: 0 }} />
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{tip}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tab: Track Mission */}
-      {activeTab === 'track' && activeTask && (
-        <div className="grid" style={{ gridTemplateColumns: '1.4fr 0.6fr', gap: 16 }}>
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-dim)' }}>
-              <div className="section-title">
-                Mission tracking map · {activeTask.id}
-              </div>
-            </div>
-            <WorkshopMissionMap
-              activeTask={activeTask}
-              isFullscreen={isFullscreen}
-              setIsFullscreen={setIsFullscreen}
-            />
-          </div>
-
-          <div className="card p-6">
-            <div className="section-title" style={{ marginBottom: 14 }}>Mission progress</div>
-            <div style={{ display: 'grid', gap: 14 }}>
-              {[
-                { time: activeTask.time, label: "Request recorded", status: 'done' },
-                { time: 'Done', label: "Staff assigned", status: 'done' },
-                {
-                  time: (activeTask.status === 'in_progress') ? 'Active' : ((activeTask.status === 'arrived' || activeTask.status === 'completed') ? 'Done' : '—'),
-                  label: "Moving to scene",
-                  status: activeTask.status === 'in_progress' ? 'active' : ((activeTask.status === 'arrived' || activeTask.status === 'completed') ? 'done' : 'pending')
-                },
-                {
-                  time: activeTask.status === 'arrived' ? 'Active' : (activeTask.status === 'completed' ? 'Done' : '—'),
-                  label: "Arrived & repairing",
-                  status: activeTask.status === 'arrived' ? 'active' : (activeTask.status === 'completed' ? 'done' : 'pending')
-                },
-                {
-                  time: activeTask.status === 'completed' ? 'Done' : '—',
-                  label: "Confirm task completion",
-                  status: activeTask.status === 'completed' ? 'done' : 'pending'
-                }
-              ].map((step, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div style={{
-                    width: 10, height: 10, borderRadius: '50%', marginTop: 4, flexShrink: 0,
-                    background: step.status === 'done' ? 'var(--green-400)' : step.status === 'active' ? 'var(--orange-400)' : 'var(--bg-elevated)',
-                    border: step.status === 'pending' ? '2px solid var(--border-dim)' : 'none',
-                    boxShadow: step.status === 'active' ? '0 0 10px var(--orange-400)' : 'none',
-                    animation: step.status === 'active' ? 'blink 1.5s ease-in-out infinite' : 'none',
-                  }} />
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: step.status === 'active' ? 700 : 500, color: step.status === 'pending' ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-                      {step.label}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                      <Clock size={10} style={{ display: 'inline', marginRight: 3 }} />{step.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-dim)' }}>
-              {activeTask.status === 'assigned' ? (
-                <button
-                  className="btn btn-primary"
-                  style={{ width: '100%' }}
-                  onClick={() => startTask(activeTask.id)}
-                >
-                  <Navigation size={14} /> Start moving to scene
-                </button>
-              ) : activeTask.status === 'in_progress' ? (
-                <button
-                  className="btn btn-primary"
-                  style={{ width: '100%', background: 'var(--cyan-400)', color: '#080d16' }}
-                  onClick={() => arriveTask(activeTask.id)}
-                >
-                  <MapPin size={14} /> Arrived & repairing
-                </button>
-              ) : activeTask.status === 'arrived' ? (
-                <button
-                  className="btn btn-success"
-                  style={{ width: '100%' }}
-                  onClick={() => completeTask(activeTask.id)}
-                >
-                  <CheckCircle size={14} /> Confirm task completion
-                </button>
-              ) : null}
+      {/* Mobile Details Modal */}
+      {isMobile && selected && activeTab === 'list' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+          backdropFilter: 'blur(4px)'
+        }} onClick={() => setSelected(null)}>
+          <div style={{
+            background: 'var(--bg-elevated)',
+            borderRadius: 'var(--r-lg)',
+            border: '1px solid var(--border-dim)',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: 16 }}>
+              {renderDetailPanel()}
             </div>
           </div>
         </div>
