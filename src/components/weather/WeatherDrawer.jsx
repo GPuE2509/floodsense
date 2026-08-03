@@ -34,8 +34,8 @@ export default function WeatherDrawer({ isOpen, onClose }) {
       }
 
       const [curRes, fcRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/weather/current${queryStr}`).then(r => r.json()),
-        fetch(`http://localhost:5000/api/weather/forecast${queryStr}`).then(r => r.json())
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather/current${queryStr}`).then(r => r.json()),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather/forecast${queryStr}`).then(r => r.json())
       ]);
 
       if (curRes.success) setCurrentWeather(curRes.data);

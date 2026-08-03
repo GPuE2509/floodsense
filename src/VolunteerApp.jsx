@@ -282,7 +282,8 @@ export default function VolunteerApp({ onLogoutToGuest }) {
     let retryTimer;
 
     const connect = () => {
-      const wsUrl = `ws://localhost:5000`;
+      const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const wsUrl = apiRoot.replace(/^http/, 'ws');
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {

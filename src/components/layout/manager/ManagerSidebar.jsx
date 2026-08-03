@@ -45,8 +45,9 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
   useEffect(() => {
     const token = localStorage.getItem('token');
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const apiRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-    fetch('http://localhost:5000/api/incident-reports')
+    fetch(`${apiRoot}/api/incident-reports`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -56,7 +57,7 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
       })
       .catch(err => console.error(err));
 
-    fetch('http://localhost:5000/api/forum/moderation-stats', { headers })
+    fetch(`${apiRoot}/api/forum/moderation-stats`, { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -65,7 +66,7 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
       })
       .catch(err => console.error(err));
 
-    fetch('http://localhost:5000/api/auth/admin/role-requests', { headers })
+    fetch(`${apiRoot}/api/auth/admin/role-requests`, { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.requests) {
