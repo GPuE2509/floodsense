@@ -1,0 +1,102 @@
+.weather-effects-container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  transition: background 1.5s ease-in-out;
+}
+
+/* Beautiful iOS-style Vibrant Gradients */
+.weather-theme-clear-day {
+  background: linear-gradient(180deg, #2b95ce 0%, #6cd5ed 100%);
+}
+.weather-theme-clear-night {
+  background: linear-gradient(180deg, #0b1a30 0%, #1c395c 100%);
+}
+.weather-theme-clouds {
+  background: linear-gradient(180deg, #5b728b 0%, #879fb9 100%);
+}
+.weather-theme-rain {
+  background: linear-gradient(180deg, #2b4162 0%, #436284 100%);
+}
+.weather-theme-thunder {
+  background: linear-gradient(180deg, #1e2638 0%, #29384d 100%);
+  animation: lightning 5s infinite;
+}
+
+/* Animations */
+@keyframes lightning {
+  0% { filter: brightness(1); }
+  1% { filter: brightness(2.5); }
+  2% { filter: brightness(1); }
+  3% { filter: brightness(2); }
+  4% { filter: brightness(1); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes cloud-move {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200vw); }
+}
+
+@keyframes rain-fall {
+  0% { transform: translateY(-10px) translateX(0) scaleY(1); opacity: 0; }
+  10% { opacity: 0.8; }
+  80% { opacity: 0.8; transform: translateY(100vh) translateX(-20px) scaleY(1.5); }
+  100% { transform: translateY(120vh) translateX(-25px) scaleY(1.5); opacity: 0; }
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.5); box-shadow: 0 0 5px #fff; }
+}
+
+@keyframes sun-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Cloud Elements */
+.effect-cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  filter: blur(25px);
+  animation: cloud-move linear infinite;
+}
+
+.cloud-1 { width: 300px; height: 100px; top: 10%; left: -300px; animation-duration: 40s; animation-delay: 0s; }
+.cloud-2 { width: 400px; height: 150px; top: 30%; left: -400px; animation-duration: 60s; animation-delay: -20s; background: rgba(255, 255, 255, 0.2); }
+.cloud-3 { width: 250px; height: 80px; top: 5%; left: -250px; animation-duration: 35s; animation-delay: -15s; }
+
+/* Rain Elements */
+.effect-rain {
+  position: absolute;
+  width: 2px;
+  height: 50px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.7));
+  animation: rain-fall linear infinite;
+  border-radius: 50%;
+}
+
+/* Stars */
+.effect-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  animation: star-twinkle ease-in-out infinite;
+}
+
+/* Sun Glow for Clear Day */
+.effect-sun {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255,235,160,0.4) 0%, rgba(255,255,255,0) 70%);
+  animation: sun-rotate 60s linear infinite;
+}
