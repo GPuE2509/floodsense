@@ -5,6 +5,29 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ConfigProvider, theme } from 'antd'
 import { BrowserRouter } from 'react-router-dom'
 
+// Intercept fetch and WebSocket to dynamically route requests to the correct production backend
+const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const originalFetch = window.fetch;
+window.fetch = function(url, options) {
+  if (typeof url === 'string') {
+    if (url.startsWith('http://localhost:5000') || url.startsWith('http://127.0.0.1:5000')) {
+      url = url.replace(/^http:\/\/(localhost|127\.0\.0\.1):5000/, backendUrl);
+    }
+  }
+  return originalFetch(url, options);
+};
+
+const OriginalWebSocket = window.WebSocket;
+window.WebSocket = function(url, protocols) {
+  if (typeof url === 'string') {
+    if (url.includes('localhost:5000') || url.includes('127.0.0.1:5000') || url.includes(`${window.location.hostname}:5000`)) {
+      const wsTarget = backendUrl.replace(/^http/, 'ws');
+      url = url.replace(/^ws(s)?:\/\/[^\/]+/, wsTarget);
+    }
+  }
+  return new OriginalWebSocket(url, protocols);
+};
+
 // ── IMPORT ALL ROLE PORTALS ──
 import Guest from './AppShell.jsx'            // Master AppShell (Simulated switch orchestrator)
 import GuestApp from './GuestApp.jsx'          // Guest (Public Bulletin) Portal

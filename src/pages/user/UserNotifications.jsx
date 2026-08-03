@@ -450,8 +450,7 @@ export default function UserNotifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Use current location origin to determine WS port, default to localhost:5000
-    const wsUrl = `ws://localhost:5000`;
+    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
