@@ -90,7 +90,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
   useEffect(() => {
     if (!currentUser || !targetUser?.id) return;
 
-    const wsUrl = `ws://${window.location.hostname}:5000`;
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:5000`;
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 

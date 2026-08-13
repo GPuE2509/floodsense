@@ -106,7 +106,8 @@ export function AuthProvider({ children }) {
       if (hasToken) {
         // dynamic import or fetch here since the user removed apiService import
         // using fetch directly to avoid import issues
-        await fetch('http://localhost:5000/api/auth/logout', { 
+        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        await fetch(`${backendUrl}/api/auth/logout`, { 
           method: 'POST', 
           headers: { 
             'Authorization': `Bearer ${hasToken}`,

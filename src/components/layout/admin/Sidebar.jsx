@@ -48,7 +48,8 @@ export default function Sidebar({ activePage, onNavigate, collapsed, onToggleCol
   const [pendingReports, setPendingReports] = useState(0);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/incident-reports')
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    fetch(`${backendUrl}/api/incident-reports`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
