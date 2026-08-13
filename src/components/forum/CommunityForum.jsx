@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../common/ConfirmModal';
 
 const INITIAL_FORUM_POSTS = [];
 
@@ -95,8 +96,17 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
   const [commentReportDetails, setCommentReportDetails] = useState('');
   const [reportError, setReportError] = useState('');
   const [reportSent, setReportSent] = useState(false);
-  const [toast, setToast] = useState(null);
+  const setToast = (obj) => {
+    if (!obj) return;
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: obj.message,
+        type: obj.type || 'info'
+      }
+    }));
+  };
   const [showOnlyMyPosts, setShowOnlyMyPosts] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [expandedComments, setExpandedComments] = useState({});
   const [expandedReplies, setExpandedReplies] = useState({});
@@ -234,7 +244,7 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
 
   useEffect(() => {
     // Set up WebSocket for real-time forum updates with auto-reconnect
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
     let ws;
     let reconnectTimeout;
 
@@ -715,18 +725,21 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
   const confirmDeletePost = () => {
     if (!deletePostTarget) return;
     const postId = deletePostTarget;
-    setDeletePostTarget(null);
     verifyAction(async () => {
       try {
+        setIsSaving(true);
         const response = await apiService.delete(`/forum/posts/${postId}`);
         if (response && response.success) {
           setPosts(prev => prev.filter(post => post.id !== postId));
           setToast({ message: "Article has been deleted successfully.", type: "success" });
           setTimeout(() => setToast(null), 3000);
+          setDeletePostTarget(null);
         }
       } catch (error) {
         console.error("Failed to delete post:", error);
         alert(error.response?.data?.message || "Failed to delete post. Please try again.");
+      } finally {
+        setIsSaving(false);
       }
     });
   };
@@ -772,9 +785,9 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
     const target = deleteCommentTarget;
     if (!target) return;
     const { postId, commentId, replyId } = target;
-    setDeleteCommentTarget(null);
     verifyAction(async () => {
       try {
+        setIsSaving(true);
         const response = await apiService.delete(`/forum/comments/${replyId || commentId}`);
         if (response && response.success) {
           setPosts(prev => prev.map(post => {
@@ -798,9 +811,13 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
           }));
           setToast({ message: "Comment has been deleted successfully.", type: "success" });
           setTimeout(() => setToast(null), 3000);
+          setDeleteCommentTarget(null);
         }
       } catch (error) {
         console.error("Failed to delete comment:", error);
+        alert(error.response?.data?.message || "Failed to delete comment. Please try again.");
+      } finally {
+        setIsSaving(false);
       }
     });
   };
@@ -1996,28 +2013,26 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
         </div>
       )}
 
-      {/* Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 9999,
-          background: toast.type === 'error' ? 'var(--red-500)' : 'var(--green-400)',
-          color: toast.type === 'error' ? 'white' : '#064e3b',
-          padding: '12px 20px',
-          borderRadius: 'var(--r-md)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: '0.85rem',
-          fontWeight: 600,
-        }}>
-          <CheckCircle size={18} />
-          {toast.message}
-        </div>
-      )}
+
+      <ConfirmModal
+        isOpen={!!deletePostTarget}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        loading={isSaving}
+        onConfirm={confirmDeletePost}
+        onCancel={() => setDeletePostTarget(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteCommentTarget}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        loading={isSaving}
+        onConfirm={confirmDeleteComment}
+        onCancel={() => setDeleteCommentTarget(null)}
+      />
 
       {/* Image Lightbox */}
       {lightboxImage && (

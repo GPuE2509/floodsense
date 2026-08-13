@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/apiService';
 import { Plus, Edit, Trash2, Shield, Phone, AlertTriangle, Heart, Car, Activity, X, Info, Baby, LifeBuoy, FireExtinguisher, Waves, HeartPulse, Truck, ChevronDown, Loader } from 'lucide-react';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const ICON_MAP = {
   'info': Info,
@@ -181,8 +182,10 @@ export default function ManagerGuidelines() {
       
       if (editingId) {
         await apiService.updateEmergencyGuideline(editingId, payload);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Guideline updated successfully!", type: 'success' } }));
       } else {
         await apiService.createEmergencyGuideline(payload);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Guideline created successfully!", type: 'success' } }));
       }
       
       setShowModal(false);
@@ -197,6 +200,7 @@ export default function ManagerGuidelines() {
         msg = err.message;
       }
       setFormErrors({ global: msg });
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg, type: 'error' } }));
     } finally {
       setSaving(false);
     }
@@ -208,12 +212,16 @@ export default function ManagerGuidelines() {
 
   const executeDelete = async (id) => {
     try {
+      setSaving(true);
       await apiService.deleteEmergencyGuideline(id);
       fetchGuidelines();
       setConfirmModal({ open: false, id: null });
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Guideline deleted successfully!", type: 'success' } }));
     } catch (err) {
       console.error('Failed to delete guideline:', err);
-      alert('Failed to delete guideline. Please try again.');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Failed to delete guideline. Please try again.', type: 'error' } }));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -562,40 +570,15 @@ export default function ManagerGuidelines() {
         </div>
       )}
 
-      {/* Custom Confirmation Modal */}
-      {confirmModal.open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="card p-6" style={{ maxWidth: 400, width: '90%', border: '1px solid rgba(239,29,55,0.3)', background: 'var(--bg-elevated)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(239,29,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red-400)' }}>
-                <Trash2 size={20} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                Delete Guideline
-              </h3>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 24 }}>
-              Are you sure you want to delete this guideline?<br />This action cannot be undone.
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setConfirmModal({ open: false, id: null })}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => executeDelete(confirmModal.id)}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title="Delete Guideline"
+        message="Are you sure you want to delete this guideline? This action cannot be undone."
+        confirmText="Confirm"
+        loading={saving}
+        onConfirm={() => executeDelete(confirmModal.id)}
+        onCancel={() => setConfirmModal({ open: false, id: null })}
+      />
     </div>
   );
 }

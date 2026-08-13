@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Trophy, Star, Gift, Save, Plus, Trash2, ArrowUpRight, ArrowDownRight, UserPlus, CheckCircle, XCircle, Send, Search } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 import { AuthContext } from '../../context/AuthContext';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const leaderboardSeed = [
   { rank: 1, name: 'Nguyen Van An', district: 'Quan 12', points: 1240, badge: 'HERO' },
@@ -67,6 +68,7 @@ export default function PointsManagement() {
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [rewardToDelete, setRewardToDelete] = useState(null);
 
   const [users, setUsers] = useState([]);
   const [selectedReward, setSelectedReward] = useState(null);
@@ -75,11 +77,7 @@ export default function PointsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const showToast = (message, type = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 4000);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
   };
 
   useEffect(() => {
@@ -127,15 +125,21 @@ export default function PointsManagement() {
     }
   };
 
-  const removeReward = async (id) => {
-    if (!window.confirm('Delete this reward?')) return;
+  const removeReward = (id) => {
+    setRewardToDelete(id);
+  };
+
+  const executeRemoveReward = async (id) => {
     try {
+      setSaving(true);
       await apiService.delete(`/admin/rewards/${id}`);
       setRewards(rewards.filter(r => r._id !== id));
       showToast('Reward deleted successfully!');
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Failed to delete reward', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -441,6 +445,18 @@ export default function PointsManagement() {
           {toastMessage}
         </div>
       )}
+      <ConfirmModal
+        isOpen={!!rewardToDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this reward?"
+        loading={saving}
+        onConfirm={async () => {
+          const id = rewardToDelete;
+          await executeRemoveReward(id);
+          setRewardToDelete(null);
+        }}
+        onCancel={() => setRewardToDelete(null)}
+      />
     </div>
   );
 }

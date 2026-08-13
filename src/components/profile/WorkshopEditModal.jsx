@@ -68,11 +68,11 @@ function ChangeMapCenter({ center }) {
 export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialData }) {
   const [shopName, setShopName] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   // Modal layout states
   const [showLargeMap, setShowLargeMap] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  
+
   // Administrative divisions lists from API
   const [provincesList, setProvincesList] = useState([]);
   const [wardsList, setWardsList] = useState([]);
@@ -82,7 +82,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
   const [selectedWard, setSelectedWard] = useState('');
   const [customWard, setCustomWard] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
-  
+
   // Shopee-like Autocomplete Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -92,7 +92,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
   const [lat, setLat] = useState(10.03711); // Default near Can Tho
   const [lng, setLng] = useState(105.78825);
   const [mapCenter, setMapCenter] = useState([10.03711, 105.78825]);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -101,16 +101,17 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
     const fetchProvinces = async () => {
       try {
         const res = await fetch('https://provinces.open-api.vn/api/p/');
-          const keptProvinceNames = new Set([
-            'tuyên quang', 'lào cai', 'thái nguyên', 'phú thọ', 'bắc ninh', 'hưng yên',
-            'hải phòng', 'ninh bình', 'quảng trị', 'đà nẵng', 'quảng ngãi', 'gia lai',
-            'khánh hoà', 'khánh hòa', 'lâm đồng', 'đắk lắk', 'hồ chí minh', 'đồng nai',
-            'tây ninh', 'cần thơ', 'vĩnh long', 'đồng tháp', 'cà mau', 'an giang',
-            'hà nội', 'thừa thiên huế', 'huế', 'lai châu', 'điện biên', 'sơn la',
-            'lạng sơn', 'quảng ninh', 'thanh hoá', 'thanh hóa', 'nghệ an', 'hà tĩnh', 'cao bằng'
-          ]);
-          const filtered = data.filter(p => keptProvinceNames.has(cleanSearchTerm(p.name)));
-          setProvincesList(filtered);
+        const data = await res.json();
+        const keptProvinceNames = new Set([
+          'tuyên quang', 'lào cai', 'thái nguyên', 'phú thọ', 'bắc ninh', 'hưng yên',
+          'hải phòng', 'ninh bình', 'quảng trị', 'đà nẵng', 'quảng ngãi', 'gia lai',
+          'khánh hoà', 'khánh hòa', 'lâm đồng', 'đắk lắk', 'hồ chí minh', 'đồng nai',
+          'tây ninh', 'cần thơ', 'vĩnh long', 'đồng tháp', 'cà mau', 'an giang',
+          'hà nội', 'thừa thiên huế', 'huế', 'lai châu', 'điện biên', 'sơn la',
+          'lạng sơn', 'quảng ninh', 'thanh hoá', 'thanh hóa', 'nghệ an', 'hà tĩnh', 'cao bằng'
+        ]);
+        const filtered = data.filter(p => keptProvinceNames.has(cleanSearchTerm(p.name)));
+        setProvincesList(filtered);
       } catch (err) {
         console.error('Error fetching provinces:', err);
       }
@@ -124,14 +125,14 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
       setShopName(initialData.name || '');
       setPhone(initialData.phone || '');
       setAddress(initialData.address || '');
-      
+
       const newLat = parseFloat(initialData.lat) || 10.8564;
       const newLng = parseFloat(initialData.lng) || 106.6234;
       setLat(newLat);
       setLng(newLng);
       setMapCenter([newLat, newLng]);
       setError('');
-      
+
       // Parse geocoded address to try and prepopulate dropdowns
       if (initialData.address && provincesList.length > 0) {
         parseAndMatchAddress(initialData.address);
@@ -149,10 +150,10 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
       const provPart = parts[parts.length - 1];
       const cleanedProv = cleanSearchTerm(provPart);
       const province = provincesList.find(p => isFuzzyMatch(cleanedProv, cleanSearchTerm(p.name)));
-      
+
       if (province) {
         setSelectedProvince(String(province.code));
-        
+
         const provinceMergers = {
           '08': ['08', '02'],
           '10': ['10', '15'],
@@ -205,11 +206,11 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
         });
         wards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
         setWardsList(wards);
-        
+
         const wardPart = parts[parts.length - 2];
         const cleanedWard = cleanSearchTerm(wardPart);
         const ward = wards.find(w => isFuzzyMatch(cleanedWard, cleanSearchTerm(w.name)));
-        
+
         if (ward) {
           setSelectedWard(String(ward.code));
         } else {
@@ -217,7 +218,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
           setCustomWard(wardPart);
         }
       }
-      
+
       // The rest is street address
       const streetParts = parts.slice(0, parts.length - 2);
       setStreetAddress(streetParts.join(', '));
@@ -375,7 +376,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
   const matchGeocodedAddress = async (addressData) => {
     try {
       console.log('Applying address data:', addressData);
-      
+
       let provinceCandidate = '';
       let districtCandidate = '';
       let wardCandidate = '';
@@ -399,7 +400,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
       const cityOrState = cleanSearchTerm(provinceCandidate);
       const countyOrDistrict = cleanSearchTerm(districtCandidate);
       const wardName = cleanSearchTerm(wardCandidate);
-      
+
       const road = addressData.road || '';
       const houseNumber = addressData.house_number || '';
       const building = addressData.building || '';
@@ -419,7 +420,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
       const carRepair = addressData.car_repair || '';
       const car = addressData.car || '';
       const bicycle = addressData.bicycle || '';
-      
+
       const prefixParts = [];
       [
         amenity,
@@ -671,7 +672,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
         lat,
         lng
       });
-      
+
       onSuccess();
     } catch (err) {
       setError(err.message || "Error updating Workshop. Please try again later.");
@@ -686,7 +687,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
       <div className="card" style={{ position: 'relative', width: '100%', maxWidth: 560, margin: '20px', display: 'flex', flexDirection: 'column', maxHeight: '95vh' }}>
-        
+
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-dim)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-primary)' }}>Edit workshop information</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -696,15 +697,15 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
 
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
           <form id="workshop-edit-form" onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
-            
+
             {/* Tên tiệm */}
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'block' }}>
                 Name of workshop <span style={{ color: 'var(--red-400)' }}>*</span>
               </label>
-              <input 
-                type="text" 
-                className="input" 
+              <input
+                type="text"
+                className="input"
                 placeholder="For example: Khanh Hong workshop"
                 value={shopName}
                 onChange={(e) => setShopName(e.target.value)}
@@ -718,9 +719,9 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'block' }}>
                 Contact phone number <span style={{ color: 'var(--red-400)' }}>*</span>
               </label>
-              <input 
-                type="text" 
-                className="input" 
+              <input
+                type="text"
+                className="input"
                 placeholder="For example: 0912345678"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -735,10 +736,10 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   Location of workshop <span style={{ color: 'var(--red-400)' }}>*</span>
                 </span>
-                <button 
-                  type="button" 
-                  className="btn btn-ghost" 
-                  onClick={handleGetCurrentLocation} 
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={handleGetCurrentLocation}
                   disabled={isLocating}
                   style={{ height: '28px', padding: '0 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--orange-400)', background: 'rgba(255, 140, 0, 0.1)', border: '1px solid rgba(255, 140, 0, 0.2)' }}
                   title="Uses the device's current location"
@@ -778,10 +779,10 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
               {selectedWard === 'other' && (
                 <div>
                   <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Enter the Ward/Commune name</label>
-                  <input 
-                    type="text" 
-                    className="input" 
-                    placeholder="For example: Thanh Loc Ward" 
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="For example: Thanh Loc Ward"
                     value={customWard}
                     onChange={(e) => setCustomWard(e.target.value)}
                     style={{ width: '100%' }}
@@ -792,9 +793,9 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
               {/* Street Address / House Number details */}
               <div>
                 <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>House number, alley, detailed street name</label>
-                <input 
-                  type="text" 
-                  className="input" 
+                <input
+                  type="text"
+                  className="input"
                   placeholder="For example: Number 14, lane 2"
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
@@ -806,7 +807,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
               {/* Map Preview (Click to open Large Map overlay) */}
               <div style={{ display: 'grid', gap: 6 }}>
                 <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Location map (Click to expand map to edit location)</label>
-                <div 
+                <div
                   onClick={() => setShowLargeMap(true)}
                   style={{
                     position: 'relative',
@@ -825,7 +826,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                     <GoongMaplibreLayer apiKey="S6RMPleSOa7QXQgi5byo4rewtt9pRnwzzHjetKjf" />
                     <ChangeMapCenter center={mapCenter} />
                   </MapContainer>
-                  
+
                   {/* Centered preview pin */}
                   <div style={{
                     position: 'absolute',
@@ -840,7 +841,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                   }}>
                     <MapPin size={24} color="var(--orange-400)" fill="rgba(255,140,0,0.25)" />
                   </div>
-                  
+
                   {/* Hover Overlay */}
                   <div style={{
                     position: 'absolute',
@@ -878,22 +879,22 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                   {/* Header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-dim)', paddingBottom: '10px' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Select location on the map</span>
-                    <button 
-                      type="button" 
-                      className="btn btn-ghost" 
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
                       onClick={() => setShowLargeMap(false)}
                       style={{ height: '28px', padding: '0 8px', fontSize: '0.72rem' }}
                     >
                       Cancel
                     </button>
                   </div>
-                  
+
                   {/* Autocomplete Search */}
                   <div style={{ position: 'relative', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input 
-                        type="text" 
-                        className="input" 
+                      <input
+                        type="text"
+                        className="input"
                         placeholder="Find roads, buildings, locations..."
                         value={searchQuery}
                         onChange={(e) => {
@@ -904,17 +905,17 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                         style={{ flex: 1, fontSize: '0.75rem', height: '36px' }}
                       />
                       {searchQuery && (
-                        <button 
-                          type="button" 
-                          className="btn btn-ghost" 
-                          onClick={() => { setSearchQuery(''); setSuggestions([]); }} 
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => { setSearchQuery(''); setSuggestions([]); }}
                           style={{ height: '36px', padding: '0 8px', fontSize: '0.72rem' }}
                         >
                           Erase
                         </button>
                       )}
                     </div>
-                    
+
                     {/* Suggestions list */}
                     {showSuggestions && suggestions.length > 0 && (
                       <div style={{
@@ -932,8 +933,8 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                         marginTop: '4px'
                       }}>
                         {suggestions.map((s, idx) => (
-                          <div 
-                            key={idx} 
+                          <div
+                            key={idx}
                             onClick={() => handleSelectSuggestion(s)}
                             style={{
                               padding: '10px 12px',
@@ -955,7 +956,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Large Map Container */}
                   <div style={{ position: 'relative', flex: 1, borderRadius: 'var(--r-md)', overflow: 'hidden', border: '1px solid var(--border-dim)', marginBottom: '12px' }}>
                     <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
@@ -963,7 +964,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                       <MapEventsHandler onMapMoveEnd={handleMapMoveEnd} />
                       <ChangeMapCenter center={mapCenter} />
                     </MapContainer>
-                    
+
                     {/* Centered Floating Pin Overlay */}
                     <div style={{
                       position: 'absolute',
@@ -987,7 +988,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                       }} />
                     </div>
                   </div>
-                  
+
                   {/* Current Address Pinned Text */}
                   <div style={{ background: 'var(--bg-void)', padding: '10px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border-dim)', marginBottom: '14px' }}>
                     <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>Currently selected area</span>
@@ -995,11 +996,11 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
                       {address || "Location has not been determined"}
                     </div>
                   </div>
-                  
+
                   {/* Confirm Button */}
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
+                  <button
+                    type="button"
+                    className="btn btn-primary"
                     onClick={() => setShowLargeMap(false)}
                     style={{ width: '100%', background: 'var(--orange-400)', color: '#fff', border: 'none', height: '40px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
@@ -1012,8 +1013,8 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
             {/* Compiled Full Address Display */}
             <div>
               <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Full address (Auto-compiled)</label>
-              <textarea 
-                className="input" 
+              <textarea
+                className="input"
                 rows={2}
                 value={address}
                 readOnly
@@ -1038,7 +1039,7 @@ export default function WorkshopEditModal({ isOpen, onClose, onSuccess, initialD
             {isLoading ? "Saving..." : <><Save size={14} /> Save changes</>}
           </button>
         </div>
-        
+
       </div>
     </div>
   );

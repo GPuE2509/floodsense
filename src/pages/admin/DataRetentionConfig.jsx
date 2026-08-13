@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Download, FileText, ChevronLeft, ChevronRight, Play, Save } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function DataRetentionConfig() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +14,7 @@ export default function DataRetentionConfig() {
   const [runningNow, setRunningNow] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+  const [showRunConfirm, setShowRunConfirm] = useState(false);
 
   // Policy & Stats
   const [autoEnabled, setAutoEnabled] = useState(false);
@@ -119,10 +121,12 @@ export default function DataRetentionConfig() {
       await apiService.put('/admin/data-retention/policy', payload);
       if (showNotification) {
         setSuccessMsg('Retention policy saved successfully.');
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Retention policy saved successfully.', type: 'success' } }));
         setTimeout(() => setSuccessMsg(null), 4000);
       }
     } catch (err) {
       setError(err.message || 'Error updating retention policy.');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Error updating retention policy.', type: 'error' } }));
     } finally {
       setSaving(false);
     }
@@ -134,25 +138,31 @@ export default function DataRetentionConfig() {
     await handleSavePolicy(nextState, false);
   };
 
-  const handleEmergencyRun = async () => {
-    if (!window.confirm('Execute immediate data archiving and purging for records exceeding retention policies?')) {
-      return;
-    }
+  const handleEmergencyRun = () => {
+    setShowRunConfirm(true);
+  };
+
+  const executeEmergencyRun = async () => {
     setRunningNow(true);
     setError(null);
     setSuccessMsg(null);
     try {
       const res = await apiService.post('/admin/data-retention/run-now', {});
       const processed = res?.logResult?.total_records_processed || 0;
+      let msg = '';
       if (processed === 0) {
-        setSuccessMsg('No expired records found exceeding retention threshold.');
+        msg = 'No expired records found exceeding retention threshold.';
       } else {
-        setSuccessMsg(`Archiving complete. Processed ${processed} records.`);
+        msg = `Archiving complete. Processed ${processed} records.`;
       }
+      setSuccessMsg(msg);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg, type: 'success' } }));
       await fetchData();
+      setShowRunConfirm(false);
       setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err) {
       setError(err.message || 'Error executing manual archive.');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Error executing manual archive.', type: 'error' } }));
     } finally {
       setRunningNow(false);
     }
@@ -597,6 +607,15 @@ export default function DataRetentionConfig() {
           </div>
         )}
       </div>
+      <ConfirmModal
+        isOpen={showRunConfirm}
+        title="Confirm Manual Archive Run"
+        message="Are you sure you want to execute immediate data archiving and purging for records exceeding retention policies?"
+        confirmText="Confirm"
+        loading={runningNow}
+        onConfirm={executeEmergencyRun}
+        onCancel={() => setShowRunConfirm(false)}
+      />
     </div>
   );
 }

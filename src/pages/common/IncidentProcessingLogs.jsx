@@ -23,7 +23,7 @@ export default function IncidentProcessingLogs() {
 
   // Pagination states & ref
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 10;
   const listTopRef = useRef(null);
 
   const handlePageChange = (newPage) => {
@@ -355,16 +355,20 @@ export default function IncidentProcessingLogs() {
             </table>
           </div>
 
-          {/* Clean Centered Pagination Controls (25 items per page, max 3 pages shown, < and > arrow buttons) */}
+          {/* Clean Centered Pagination Controls (10 items per page, max 3 pages shown, < and > arrow buttons) */}
           {totalPages >= 1 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
               padding: '16px 20px',
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-surface)'
             }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 20 }}>
+                Show {filteredLogs.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredLogs.length)} / {filteredLogs.length} Log
+              </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {/* Previous Arrow < */}
                 <button

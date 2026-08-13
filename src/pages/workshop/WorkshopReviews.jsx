@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Star, ThumbsUp, ThumbsDown, Send, CheckCircle,
   Filter, MessageSquare, Clock, ChevronDown, ChevronUp,
-  Flag, User, Loader, Camera, SquarePen, Trash2
+  Flag, User, Loader, Camera, SquarePen, Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { apiService } from '../../services/apiService';
 
 const ratingColors = { 5: 'var(--green-400)', 4: '#f59e0b', 3: 'var(--orange-400)', 2: 'var(--red-400)', 1: 'var(--red-400)' };
@@ -19,6 +20,28 @@ export default function WorkshopReviews() {
   const [respondingReviewId, setRespondingReviewId] = useState(null);
   const [replyImages, setReplyImages] = useState({});
   const replyFileInputRef = useRef(null);
+  const [responseToDelete, setResponseToDelete] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: message,
+        type: type
+      }
+    }));
+  };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [pageInput, setPageInput] = useState('1');
+
+  useEffect(() => {
+    setPageInput(currentPage.toString());
+  }, [currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
 
   const fetchWorkshopAndReviews = async (silent = false) => {
     if (!silent && reviews.length === 0) setLoading(true);
@@ -115,10 +138,13 @@ export default function WorkshopReviews() {
     1: reviews.filter(r => r.rating === 1).length
   };
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedReviews = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const handleReplyImageChange = async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) { alert("Image max size is 10MB per file"); continue; }
+      if (file.size > 10 * 1024 * 1024) { showToast("Image max size is 10MB per file", "error"); continue; }
       const reader = new FileReader();
       reader.onloadend = () => {
         setReplyImages(prev => {
@@ -153,21 +179,24 @@ export default function WorkshopReviews() {
         setReplyImages(prev => ({ ...prev, [id]: [] }));
         setRespondingReviewId(null);
         setSentId(id);
-        setTimeout(() => setSentId(null), 2500);
+        showToast('Reply submitted successfully!', 'success');
       } else {
-        alert('An error occurred while submitting your response. Please try again.');
+        showToast('An error occurred while submitting your response. Please try again.', 'error');
       }
     } catch (err) {
       console.error('Error sending response to review:', err);
-      alert('Could not submit response: ' + (err.message || 'Connection error'));
+      showToast('Could not submit response: ' + (err.message || 'Connection error'), 'error');
     } finally {
       setSending(false);
     }
   };
 
-  const deleteResponse = async (id) => {
+  const deleteResponse = (id) => {
+    setResponseToDelete(id);
+  };
+
+  const executeDeleteResponse = async (id) => {
     if (!workshopId || sending) return;
-    if (!window.confirm('Are you sure you want to delete your response to this review?')) return;
     try {
       setSending(true);
       const res = await apiService.delete(`/workshops/${workshopId}/reviews/${id}/respond`);
@@ -179,12 +208,13 @@ export default function WorkshopReviews() {
           reply_images: [],
           reply_time: ''
         } : r));
+        showToast('Response deleted successfully!', 'success');
       } else {
-        alert('An error occurred while deleting your response. Please try again.');
+        showToast('An error occurred while deleting your response. Please try again.', 'error');
       }
     } catch (err) {
       console.error('Error deleting response:', err);
-      alert('Could not delete response: ' + (err.message || 'Connection error'));
+      showToast('Could not delete response: ' + (err.message || 'Connection error'), 'error');
     } finally {
       setSending(false);
     }
@@ -275,7 +305,7 @@ export default function WorkshopReviews() {
                 </div>
               </div>
             ) : (
-              filtered.map(r => (
+              paginatedReviews.map(r => (
                 <div key={r.id} className="card" style={{
                   padding: '16px 20px',
                   borderLeft: r.rating >= 4 ? '3px solid var(--green-400)' : r.rating === 3 ? '3px solid var(--orange-400)' : '3px solid var(--red-400)',
@@ -506,11 +536,90 @@ export default function WorkshopReviews() {
                     </div>
                   )}
                 </div>
-              ))
-            )}
-          </div>
+            ))
+          )}
+          {filtered.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--r-md)',
+              marginTop: 12
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filtered.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> reviews
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                >
+                  Previous
+                </button>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Page 
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(e) => {
+                      const valStr = e.target.value;
+                      setPageInput(valStr);
+                      const val = parseInt(valStr, 10);
+                      if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                        setCurrentPage(val);
+                      }
+                    }}
+                    onBlur={() => {
+                      setPageInput(currentPage.toString());
+                    }}
+                    style={{
+                      width: 44,
+                      padding: '4px 6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 4,
+                      color: 'var(--text-primary)',
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                  of {totalPages}
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         </>
       )}
+      <ConfirmModal
+        isOpen={!!responseToDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete your response to this review? This action cannot be undone."
+        loading={sending}
+        onConfirm={async () => {
+          const id = responseToDelete;
+          await executeDeleteResponse(id);
+          setResponseToDelete(null);
+        }}
+        onCancel={() => setResponseToDelete(null)}
+      />
     </div>
   );
 }

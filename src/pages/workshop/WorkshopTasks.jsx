@@ -11,6 +11,7 @@ import GoongMaplibreLayer from '../../components/common/GoongMaplibreLayer';
 import { apiService } from '../../services/apiService';
 import { useNavigate } from 'react-router-dom';
 import RescueSessionChat from '../../components/common/RescueSessionChat';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const getReportTypeLabel = (type) => {
   if (!type) return 'Unknown';
@@ -553,7 +554,9 @@ export default function WorkshopTasks() {
   }, []);
   const [mechanics, setMechanics] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [paymentToConfirm, setPaymentToConfirm] = useState(null);
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState('list');
   const [assignModal, setAssignModal] = useState(null);
@@ -715,14 +718,22 @@ export default function WorkshopTasks() {
     }
   };
 
-  const confirmPayment = async (id) => {
+  const confirmPayment = (id) => {
+    setPaymentToConfirm(id);
+  };
+
+  const executeConfirmPayment = async (id) => {
     try {
+      setIsSaving(true);
       const res = await apiService.put(`/rescue/${id}/confirm-payment`);
       if (res && res.success) {
         await fetchTasks();
+        setSelected(prev => prev && prev.id === id ? { ...prev, isPaid: true } : prev);
       }
     } catch (err) {
       console.error('Failed to confirm payment:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -746,7 +757,22 @@ export default function WorkshopTasks() {
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>"{selected.note}"</div>
           </div>
           {[
-            { icon: Wrench, label: "Service", value: selected.service },
+            { 
+              icon: Wrench, 
+              label: "Service", 
+              value: (selected.selected_services && selected.selected_services.length > 0) ? (
+                <div style={{ display: 'grid', gap: 4, marginTop: 2 }}>
+                  {selected.selected_services.map((srv, i) => (
+                    <div key={i} style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                      {srv.service_name} 
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                        {' '}({srv.base_price?.toLocaleString('vi-VN')}₫ / {srv.unit || 'turn'})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : selected.service
+            },
             { 
               icon: Wrench, 
               label: "Total Price", 
@@ -959,7 +985,7 @@ export default function WorkshopTasks() {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gap: 10, minHeight: 200, position: 'relative' }}>
+            <div style={{ display: 'grid', gap: 10, minHeight: 200, position: 'relative', alignContent: 'start' }}>
               {isLoading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 20px', color: 'var(--cyan-400)' }}>
                   <Loader className="animate-spin" size={24} />
@@ -1000,7 +1026,7 @@ export default function WorkshopTasks() {
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {totalTasks > 0 && (
               <div className="flex items-center justify-between" style={{ marginTop: 16, padding: '8px 4px', flexWrap: 'wrap', gap: 12 }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                   Showing <strong style={{ color: 'var(--text-primary)' }}>{totalTasks === 0 ? 0 : (page - 1) * limit + 1}-{Math.min(page * limit, totalTasks)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalTasks}</strong> tasks
@@ -1206,6 +1232,19 @@ export default function WorkshopTasks() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={!!paymentToConfirm}
+        title="Confirm Payment"
+        message="Are you sure you want to confirm payment for this rescue task? This will mark the task's payment transaction as completed."
+        confirmText="Confirm"
+        loading={isSaving}
+        onConfirm={async () => {
+          const id = paymentToConfirm;
+          await executeConfirmPayment(id);
+          setPaymentToConfirm(null);
+        }}
+        onCancel={() => setPaymentToConfirm(null)}
+      />
     </div>
   );
 }

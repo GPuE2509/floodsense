@@ -704,7 +704,7 @@ export default function VolunteerMissions() {
             victim: item.requester_id?.full_name || 'Anonymous User',
             phone: item.sender_phone || 'Not provided',
             message: item.description || 'Urgent assistance needed in the flooded area.',
-            time: new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            time: new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             status: item.status === 'Assigned' ? 'accepted' : (item.status === 'Completed' ? 'resolved' : (item.status === 'Cancelled' ? 'cancelled' : item.status.toLowerCase())), // map backend Assigned/Completed/Cancelled to accepted/resolved/cancelled
             type: label,
             coords: `${item.initial_lat}, ${item.initial_lng}`,

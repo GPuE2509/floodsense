@@ -271,7 +271,7 @@ export default function WorkshopApp({
     let retryTimer;
 
     const connect = () => {
-      const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+      const wsUrl = `ws://localhost:5000`;
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
@@ -343,7 +343,9 @@ export default function WorkshopApp({
               id: Date.now(),
               title: msg.notification.title,
               body: msg.notification.body,
-              isNotification: true
+              isNotification: true,
+              webUrl: msg.notification.metadata?.web_url || '/tasks',
+              showAction: true
             });
           } else if (msg.type === 'rescue-update' || msg.type === 'rescue_status_update') {
             window.dispatchEvent(new CustomEvent('rescue-update'));

@@ -7,6 +7,7 @@ import { message } from 'antd';
 import { useAuth } from '../../hooks/useAuth';
 import { apiService } from '../../services/apiService';
 import VolunteerEditModal from '../../components/profile/VolunteerEditModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 
 const initialProfile = {
@@ -55,6 +56,14 @@ export default function VolunteerProfile() {
   const [showVolunteerEditModal, setShowVolunteerEditModal] = useState(false);
   const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const showToast = (type, msg) => {
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: msg,
+        type: type
+      }
+    }));
+  };
 
   const handleToggleVolunteerStatus = async (action) => {
     setIsTogglingStatus(true);
@@ -67,11 +76,11 @@ export default function VolunteerProfile() {
           status: (vol.status === 'Approved' || vol.status === 'Available') ? 'active' : vol.status === 'Inactive' ? 'inactive' : 'suspended',
         }));
         setShowSuspendConfirm(false);
-        message.success("Update status successfully.");
+        showToast('success', "Update status successfully.");
       }
     } catch (error) {
       console.error('Failed to toggle status:', error);
-      message.error(error.message || "Status update error.");
+      showToast('error', error.message || "Status update error.");
     } finally {
       setIsTogglingStatus(false);
     }
@@ -80,11 +89,11 @@ export default function VolunteerProfile() {
   const handleCancelVolunteerRequest = async () => {
     try {
       await apiService.put('/volunteers/me/cancel');
-      message.success("Successfully withdrawn from the Rescue Team.");
+      showToast('success', "Successfully withdrawn from the Rescue Team.");
       setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error('Failed to cancel/resign:', error);
-      message.error(error.response?.data?.message || "Error while performing operation.");
+      showToast('error', error.response?.data?.message || "Error while performing operation.");
     }
   };
 
@@ -208,21 +217,7 @@ export default function VolunteerProfile() {
                 <XCircle size={13} /> Cancel volunteer registration
               </button>
             </div>
-
-            {showSuspendConfirm && (
-              <div className="alert-banner" style={{ marginTop: 12, background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                <AlertTriangle size={14} color="var(--orange-400)" />
-                <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--orange-400)' }}>Confirmed suspension?</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>You will not receive new SOS requests.</div>
-                  <div className="flex gap-2">
-                    <button className="btn btn-sm" style={{ background: 'rgba(249,115,22,0.2)', color: 'var(--orange-400)', border: 'none' }} onClick={() => handleToggleVolunteerStatus('pause')} disabled={isTogglingStatus}>{isTogglingStatus ? "Processing..." : "Confirm"}</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setShowSuspendConfirm(false)}>Cancel</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
 
           {/* Vehicle Info */}
           {profile.vehicleType && (
@@ -312,38 +307,26 @@ export default function VolunteerProfile() {
         </div>
       )}
 
-      {/* Cancel Confirmation Modal */}
-      {showCancelConfirm && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="card p-6" style={{ maxWidth: 600, width: '90%', border: '1px solid rgba(239,29,55,0.3)', background: 'var(--bg-elevated)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(239,29,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red-400)' }}>
-                <XCircle size={20} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Confirmed withdrawal from the role of Rescue Volunteer?</h3>
-            </div>
+      <ConfirmModal
+        isOpen={showSuspendConfirm}
+        title="Confirm Pause Activity"
+        message="Are you sure you want to temporarily suspend your volunteer activity? You will not receive new SOS rescue requests."
+        confirmText="Confirm"
+        type="warning"
+        loading={isTogglingStatus}
+        onConfirm={() => handleToggleVolunteerStatus('pause')}
+        onCancel={() => setShowSuspendConfirm(false)}
+      />
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 24 }}>
-              Leaving your current role will cause your account to revert to a regular member, but previously earned contributions and credits will still be credited.
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowCancelConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={handleCancelVolunteerRequest}
-              >
-                Confirm withdrawal
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        title="Confirm Withdrawal"
+        message="Are you sure you want to leave your current role? Your account will revert to a regular member, but previously earned contributions and credits will still be credited."
+        confirmText="Confirm withdrawal"
+        type="danger"
+        onConfirm={handleCancelVolunteerRequest}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
     </div>
   );
 }

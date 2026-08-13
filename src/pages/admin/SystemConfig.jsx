@@ -165,10 +165,11 @@ export default function SystemConfig() {
       const res = await apiService.put('/auth/admin/config', payload);
       if (res.success) {
         setSaved(true);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'System threshold configuration saved successfully.', type: 'success' } }));
         setTimeout(() => setSaved(false), 3000);
       }
     } catch (err) {
-      alert(err.message || 'Failed to save configuration');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Failed to save configuration', type: 'error' } }));
     } finally {
       setSaving(false);
     }
@@ -182,10 +183,11 @@ export default function SystemConfig() {
       });
       if (res.success) {
         setSavedSpeed(true);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Rising speed threshold configuration saved successfully.', type: 'success' } }));
         setTimeout(() => setSavedSpeed(false), 3000);
       }
     } catch (err) {
-      alert(err.message || 'Failed to save rising speed threshold');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Failed to save rising speed threshold', type: 'error' } }));
     } finally {
       setSavingSpeed(false);
     }

@@ -47,7 +47,15 @@ export default function ShiftScheduleMatrix({ staffList = [], isOwner = false })
   const [assignments, setAssignments] = useState([]); // Array of { shiftTemplateId, staffId, date: 'YYYY-MM-DD' }
   const [selectedStaffId, setSelectedStaffId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const setToast = (obj) => {
+    if (!obj) return;
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: obj.message,
+        type: obj.type || 'info'
+      }
+    }));
+  };
   const [applyToFuture, setApplyToFuture] = useState(false);
   const [duplicateWeeks, setDuplicateWeeks] = useState(1);
   const [editingTemplate, setEditingTemplate] = useState(null);
@@ -255,19 +263,7 @@ export default function ShiftScheduleMatrix({ staffList = [], isOwner = false })
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
-      {toast && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 9999,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
-          padding: '12px 20px', borderRadius: 8, boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', gap: 8,
-          color: toast.type === 'success' ? '#34d399' : '#ef4444',
-          fontWeight: 600, fontSize: '0.9rem'
-        }}>
-          {toast.type === 'success' ? <CheckCircle size={18} /> : <CloudLightning size={18} />}
-          {toast.message}
-        </div>
-      )}
+
 
       {/* Top Header Section */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>

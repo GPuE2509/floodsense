@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
   Users, Plus, Edit3, Trash2, Save, CheckCircle,
-  Clock, Star, Phone, Wrench, Calendar, ToggleRight, XCircle, Play, Pause, Mail
+  Clock, Star, Phone, Wrench, Calendar, ToggleRight, XCircle, Play, Pause, Mail, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { AuthContext } from '../../context/AuthContext';
 import ShiftScheduleMatrix from '../../components/workshop/shift/ShiftScheduleMatrix';
 
@@ -19,14 +20,31 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
   const [editing, setEditing] = useState(null); // mechanic ID being edited
   const [adding, setAdding] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
   const [suspendingStaff, setSuspendingStaff] = useState(null);
-  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
+  const setToast = (obj) => {
+    if (!obj) return;
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: obj.message,
+        type: obj.type || 'info'
+      }
+    }));
+  };
   // Local state for interactive schedule demo
   const [schedules, setSchedules] = useState({});
   const [newMechanic, setNewMechanic] = useState({
     name: '', phone: '', age: '', experience: '', skills: [], shift: "Morning (6am–2pm)", salary: '',
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [pageInput, setPageInput] = useState('1');
+
+  useEffect(() => {
+    setPageInput(currentPage.toString());
+  }, [currentPage]);
 
   useEffect(() => {
     fetchStaff();
@@ -53,7 +71,7 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
           shift: 'Morning (6am–2pm)',
           status: (s.status === 'Pending_Invite' || s.status === 'Pending Invite') ? 'pending' : s.status === 'Rejected' ? 'rejected' : s.status === 'Suspended' ? 'suspended' : (s.status === 'Inactive' ? 'inactive' : 'active'),
           onDuty: s.isOnDuty || false,
-          tasks: 0,
+          tasks: s.tasksCount || 0,
           rating: 5.0,
           invitedAt: s.invited_at ? new Date(s.invited_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Unknown',
           joinDate: s.joined_at ? new Date(s.joined_at).toLocaleDateString('vi-VN') : (s.invited_at ? new Date(s.invited_at).toLocaleDateString('vi-VN') : 'Unknown'),
@@ -95,6 +113,7 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
   const confirmSuspend = async () => {
     if (!suspendingStaff) return;
     try {
+      setIsSaving(true);
       const res = await apiService.put(`/workshops/me/staff/${suspendingStaff.userId}/suspend`);
       if (res) {
         setToast({ type: 'success', message: res.message || 'Suspension status toggled!' });
@@ -102,8 +121,10 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
       }
     } catch (err) {
       setToast({ type: 'error', message: err.message || 'Failed to toggle suspension.' });
+    } finally {
+      setIsSaving(false);
+      setSuspendingStaff(null);
     }
-    setSuspendingStaff(null);
   };
 
   const deleteMechanic = (id) => {
@@ -143,34 +164,12 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
     ? (activeMechanics.reduce((s, m) => s + m.rating, 0) / activeMechanics.length).toFixed(1) 
     : '0';
 
+  const totalPages = Math.ceil(activeMechanics.length / itemsPerPage);
+  const paginatedMechanics = activeMechanics.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="page-enter" style={{ position: 'relative' }}>
       
-      {/* Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          zIndex: 9999,
-          background: toast.type === 'success' ? '#10b981' : '#ef4444',
-          color: 'white',
-          padding: '12px 20px',
-          borderRadius: 8,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontWeight: 500,
-          animation: 'slideInRight 0.3s ease-out forwards',
-        }}>
-          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-          {toast.message}
-          <button onClick={() => setToast(null)} style={{ background: 'transparent', border: 'none', color: 'white', marginLeft: 8, cursor: 'pointer' }}>
-            <XCircle size={14} />
-          </button>
-        </div>
-      )}
 
       <div className="page-header">
         <div className="flex justify-between items-center flex-wrap gap-4" style={{ marginBottom: 24 }}>
@@ -188,12 +187,11 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
       </div>
 
       {/* Stats */}
-      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+      <div className="grid grid-3" style={{ marginBottom: 24 }}>
         {[
           { label: "Total Staff", value: activeMechanics.length, color: 'var(--cyan-400)' },
           { label: "Active", value: activeCount, color: 'var(--green-400)' },
           { label: "On duty", value: onDutyCount, color: '#f59e0b' },
-          { label: "Average Rating", value: averageRating + '★', color: 'var(--gold-400)' },
         ].map(s => (
           <div key={s.label} className="card p-5 flex items-center gap-4">
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.value}</div>
@@ -222,25 +220,40 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
         )}
       </div>
 
-      {/* Invite/Add mechanic form */}
+      {/* Invite/Add mechanic form modal */}
       {adding && (
-        <div className="card p-6" style={{ marginBottom: 20, border: '1px solid rgba(217,119,6,0.3)' }}>
-          <div className="section-title" style={{ marginBottom: 16 }}>Invite User to Workshop Staff</div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>User Phone / Email</label>
-            <input 
-              className="input" 
-              placeholder="Enter phone number or email to invite..." 
-              value={newMechanic.phone} 
-              onChange={e => setNewMechanic(p => ({ ...p, phone: e.target.value }))} 
-            />
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 6 }}>
-              The user will receive a notification in their app. Once they accept, their profile details will be displayed here automatically.
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div className="card p-6" style={{ width: '100%', maxWidth: 500, border: '1px solid rgba(217,119,6,0.3)', background: 'var(--bg-card)' }}>
+            <div className="section-title" style={{ marginBottom: 16 }}>Invite User to Workshop Staff</div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>User Phone / Email</label>
+              <input 
+                className="input" 
+                placeholder="Enter phone number or email to invite..." 
+                value={newMechanic.phone} 
+                onChange={e => setNewMechanic(p => ({ ...p, phone: e.target.value }))} 
+              />
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                The user will receive a notification in their app. Once they accept, their profile details will be displayed here automatically.
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <button className="btn btn-primary" onClick={addMechanic}><CheckCircle size={14} /> Send Invite</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+            <div className="flex gap-3" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={addMechanic}><CheckCircle size={14} /> Send Invite</button>
+            </div>
           </div>
         </div>
       )}
@@ -248,7 +261,7 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
       {/* Tab: List */}
       {activeTab === 'list' && (
         <div className="grid" style={{ gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: 16 }}>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
             {activeMechanics.length === 0 ? (
               <div className="card p-6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Users size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
@@ -256,7 +269,7 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                 <div style={{ fontSize: '0.85rem' }}>Please invite users to manage your workshop staff.</div>
               </div>
             ) : (
-              activeMechanics.map(m => (
+              paginatedMechanics.map(m => (
                 <div key={m.id} className="card" style={{
                 padding: '16px 18px',
                 borderLeft: m.onDuty ? '3px solid #f59e0b' : m.status === 'inactive' ? '3px solid var(--border-dim)' : '3px solid var(--border-default)',
@@ -278,8 +291,8 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                       <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 3 }}>
                         <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{m.name}</span>
                         {m.isOwner && <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(71,85,105,0.2)', color: 'var(--text-secondary)' }}>Owner</span>}
-                        <span className={`badge ${m.status === 'active' ? (m.onDuty ? 'badge-orange' : 'badge-green') : m.status === 'pending' ? 'badge-blue' : ''}`} style={{ fontSize: '0.62rem', ...(m.status === 'inactive' ? { background: 'rgba(71,85,105,0.3)', color: 'var(--text-muted)' } : m.status === 'suspended' ? { background: 'rgba(234,179,8,0.2)', color: 'var(--yellow-400)' } : {}) }}>
-                          {m.status === 'inactive' ? "Resigned" : m.status === 'pending' ? "Pending Invite" : m.status === 'suspended' ? "SUSPENDED" : m.onDuty ? "ON DUTY" : "AVAILABLE"}
+                        <span className={`badge ${m.status === 'active' ? 'badge-green' : m.status === 'pending' ? 'badge-blue' : ''}`} style={{ fontSize: '0.62rem', ...(m.status === 'inactive' ? { background: 'rgba(71,85,105,0.3)', color: 'var(--text-muted)' } : m.status === 'suspended' ? { background: 'rgba(234,179,8,0.2)', color: 'var(--yellow-400)' } : {}) }}>
+                          {m.status === 'inactive' ? "Resigned" : m.status === 'pending' ? "Pending Invite" : m.status === 'suspended' ? "SUSPENDED" : "AVAILABLE"}
                         </span>
                         {m.currentTask && <span className="badge badge-blue" style={{ fontSize: '0.6rem' }}>{m.currentTask}</span>}
                       </div>
@@ -287,31 +300,17 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                         {m.rawEmail ? <Mail size={11} style={{ display: 'inline', marginRight: 3 }} /> : <Phone size={11} style={{ display: 'inline', marginRight: 3 }} />}
                         {[m.rawEmail, m.rawPhone].filter(Boolean).join(' / ') || 'N/A'}
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {m.skills.slice(0, 3).map(s => (
-                          <span key={s} className="badge" style={{ fontSize: '0.6rem', background: 'rgba(217,119,6,0.1)', color: '#f59e0b', border: 'none', padding: '1px 6px' }}>{s}</span>
-                        ))}
-                        {m.skills.length > 3 && <span className="badge" style={{ fontSize: '0.6rem', background: 'rgba(71,85,105,0.2)', color: 'var(--text-muted)', border: 'none' }}>+{m.skills.length - 3}</span>}
-                      </div>
+                       {/* Skills badges deleted */}
                     </div>
                   </div>
 
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end', marginBottom: 4 }}>
-                      {[1,2,3,4,5].map(s => <Star key={s} size={11} fill={s <= Math.round(m.rating) ? '#f59e0b' : 'none'} color={s <= Math.round(m.rating) ? '#f59e0b' : 'var(--border-default)'} />)}
-                    </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.tasks} tasks</div>
                       <div className="flex gap-2" style={{ marginTop: 6 }}>
-                        {isCurrentUserOwner && (
+                        {isCurrentUserOwner && !m.isOwner && (
                           <>
                             <button className="btn btn-ghost btn-sm" style={{ padding: '3px 8px', color: m.status === 'suspended' ? 'var(--green-400)' : 'var(--yellow-400)' }} onClick={e => { e.stopPropagation(); setSuspendingStaff(m); }}>
                               {m.status === 'suspended' ? <Play size={12} /> : <Pause size={12} />}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" style={{ padding: '3px 8px' }} onClick={e => { e.stopPropagation(); setEditing(m.id); setSelected(m); }}>
-                              <Edit3 size={12} />
-                            </button>
-                            <button className="btn btn-ghost btn-sm" style={{ padding: '3px 8px', color: 'var(--red-400)' }} onClick={e => { e.stopPropagation(); deleteMechanic(m.id); }}>
-                              <Trash2 size={12} />
                             </button>
                           </>
                         )}
@@ -320,6 +319,73 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                 </div>
               </div>
             ))
+          )}
+          {activeMechanics.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--r-md)',
+              marginTop: 12
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{activeMechanics.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, activeMechanics.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{activeMechanics.length}</strong> staff
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                >
+                  Previous
+                </button>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Page 
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(e) => {
+                      const valStr = e.target.value;
+                      setPageInput(valStr);
+                      const val = parseInt(valStr, 10);
+                      if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                        setCurrentPage(val);
+                      }
+                    }}
+                    onBlur={() => {
+                      setPageInput(currentPage.toString());
+                    }}
+                    style={{
+                      width: 44,
+                      padding: '4px 6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 4,
+                      color: 'var(--text-primary)',
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                  of {totalPages}
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
@@ -340,18 +406,14 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                   )}
                 </div>
                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{selected.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{selected.experience} experience</div>
               </div>
 
               <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
                 {[
                   { label: "Phone Number", value: selected.phone },
-                  { label: "Age", value: selected.age + " years old" },
-                  { label: "Shift", value: selected.shift },
+                  { label: "Email Address", value: selected.rawEmail || 'N/A' },
                   { label: "Join Date", value: selected.joinDate },
-                  { label: "Salary", value: `${parseInt(selected.salary?.toString().replace(/\D/g, '') || '0').toLocaleString('vi-VN')}₫/month` },
                   { label: "Total Tasks", value: `${selected.tasks} tasks` },
-                  { label: "Rating", value: `${selected.rating} ★` },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between" style={{ padding: '6px 0', borderBottom: '1px solid var(--border-dim)', fontSize: '0.8rem' }}>
                     <span style={{ color: 'var(--text-muted)' }}>{row.label}</span>
@@ -360,43 +422,12 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                 ))}
               </div>
 
-              {/* Skills */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>Skill {editing === selected.id && "(click to edit)"}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {SKILLS.map(skill => {
-                    const isActive = mechanics.find(m => m.id === selected.id)?.skills.includes(skill);
-                    return (
-                      <button key={skill} onClick={() => editing === selected.id && toggleSkill(selected.id, skill)} style={{
-                        padding: '3px 8px', fontSize: '0.68rem', borderRadius: 999,
-                        cursor: editing === selected.id ? 'pointer' : 'default',
-                        border: isActive ? '1px solid rgba(217,119,6,0.4)' : '1px solid var(--border-dim)',
-                        background: isActive ? 'rgba(217,119,6,0.12)' : 'transparent',
-                        color: isActive ? '#f59e0b' : 'var(--text-muted)',
-                      }}>{isActive ? '✓ ' : ''}{skill}</button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Toggle controls - Only for owner */}
-              {isCurrentUserOwner && (
+              {isCurrentUserOwner && !selected.isOwner && (
                 <div style={{ display: 'grid', gap: 8, paddingTop: 8, borderTop: '1px solid var(--border-dim)' }}>
-                  <div className="flex items-center justify-between" style={{ padding: '8px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border-dim)', background: 'rgba(61,125,176,0.04)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>On duty</span>
-                    <label className="toggle">
-                      <input type="checkbox" checked={mechanics.find(m => m.id === selected.id)?.onDuty || false} onChange={() => toggleOnDuty(selected.id)} />
-                      <span className="toggle-slider" />
-                    </label>
-                  </div>
                   <button className={`btn btn-sm ${mechanics.find(m => m.id === selected.id)?.status === 'active' ? 'btn-danger' : 'btn-success'}`} onClick={() => toggleStatus(selected.id)}>
                     <ToggleRight size={13} /> {mechanics.find(m => m.id === selected.id)?.status === 'active' ? "Suspend Activities" : "Reactivate"}
                   </button>
-                  {editing === selected.id ? (
-                    <button className="btn btn-success btn-sm" onClick={saveEdit}><Save size={13} /> Save changes</button>
-                  ) : (
-                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(selected.id)}><Edit3 size={13} /> Edit</button>
-                  )}
                 </div>
               )}
             </div>
@@ -519,32 +550,18 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
         </div>
       )}
 
-      {/* Suspend Modal */}
-      {suspendingStaff && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.7)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="card p-6" style={{ width: '90%', maxWidth: 400, background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 12 }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
-              {suspendingStaff.status === 'suspended' ? 'Lift Suspension' : 'Suspend Staff'}
-            </div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.5 }}>
-              {suspendingStaff.status === 'suspended'
-                ? `Are you sure you want to lift the suspension for ${suspendingStaff.name}? They will be able to resume their shifts.`
-                : `Are you sure you want to suspend ${suspendingStaff.name}? All their future shifts will be marked as suspended.`
-              }
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button className="btn btn-ghost" onClick={() => setSuspendingStaff(null)}>Cancel</button>
-              <button className="btn" style={{ background: 'var(--yellow-500)', color: '#000', fontWeight: 600 }} onClick={confirmSuspend}>
-                {suspendingStaff.status === 'suspended' ? 'Lift Suspension' : 'Confirm'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!suspendingStaff}
+        title={suspendingStaff?.status === 'suspended' ? 'Lift Suspension' : 'Suspend Staff'}
+        message={suspendingStaff ? (suspendingStaff.status === 'suspended'
+          ? `Are you sure you want to lift the suspension for ${suspendingStaff.name}? They will be able to resume their shifts.`
+          : `Are you sure you want to suspend ${suspendingStaff.name}? All their future shifts will be marked as suspended.`
+        ) : ''}
+        confirmText={suspendingStaff?.status === 'suspended' ? 'Lift Suspension' : 'Confirm'}
+        loading={isSaving}
+        onConfirm={confirmSuspend}
+        onCancel={() => setSuspendingStaff(null)}
+      />
     </div>
   );
 }

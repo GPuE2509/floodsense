@@ -552,6 +552,7 @@ export default function UserSOS() {
   });
   const [safePhotos, setSafePhotos] = useState([]);
   const [phone, setPhone] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   const [coords, setCoords] = useState({ lat: null, lng: null, address: 'Locating...' });
   const [workshops, setWorkshops] = useState([]);
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
@@ -567,7 +568,8 @@ export default function UserSOS() {
           const lng = coords.lng || 106.6234;
           const res = await apiService.get(`/workshops?lat=${lat}&lng=${lng}`);
           if (res && res.success && res.data) {
-            setWorkshops(res.data);
+            const filtered = res.data.filter(ws => !(ws.isOwner || ws.is_owner || (currentUser && ws.owner_id === currentUser._id)));
+            setWorkshops(filtered);
           }
         } catch (err) {
           console.error('Failed to fetch workshops:', err);
@@ -577,7 +579,7 @@ export default function UserSOS() {
       };
       fetchWorkshops();
     }
-  }, [activeTab, coords.lat, coords.lng]);
+  }, [activeTab, coords.lat, coords.lng, currentUser]);
 
   const [contacts, setContacts] = useState(initContacts);
   const [sent, setSent] = useState(false);
@@ -606,6 +608,7 @@ export default function UserSOS() {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [copiedPhoneId, setCopiedPhoneId] = useState(null);
+  const [contactToDelete, setContactToDelete] = useState(null);
 
   useEffect(() => {
     setHistoryPageInput(historyPage.toString());
@@ -763,8 +766,11 @@ export default function UserSOS() {
     const fetchProfile = async () => {
       try {
         const res = await apiService.get('/auth/profile');
-        if (res && res.user && res.user.phone) {
-          setPhone(res.user.phone);
+        if (res && res.user) {
+          setCurrentUser(res.user);
+          if (res.user.phone) {
+            setPhone(res.user.phone);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch user profile:', err);
@@ -1115,6 +1121,10 @@ export default function UserSOS() {
       showToast('Contact needed', 'Please register your phone number in your profile to request mobile repair.');
       return;
     }
+    if (selectedWorkshop && currentUser && (selectedWorkshop.owner_id === currentUser._id || selectedWorkshop.isOwner || selectedWorkshop.is_owner)) {
+      showToast('Request Error', 'You cannot request rescue services from your own workshop.');
+      return;
+    }
     if (!services || services.length === 0) {
       showToast('No service selected', 'Please select at least one service.');
       return;
@@ -1189,7 +1199,7 @@ export default function UserSOS() {
 
   const renderRescueTracking = (rescue) => {
     const isMobileRepair = !!rescue.workshop_id;
-    const createdTime = new Date(rescue.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const createdTime = new Date(rescue.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     const isAssigned = rescue.status === 'Assigned' || rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed' || rescue.status === 'Resolved';
     const isMoving = rescue.status === 'In_Progress' || rescue.status === 'Arrived' || rescue.status === 'Completed' || rescue.status === 'Resolved';
@@ -1309,6 +1319,22 @@ export default function UserSOS() {
               ))}
             </div>
 
+            {rescue.selected_services && rescue.selected_services.length > 0 && (
+              <div style={{ marginTop: 14, padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-dim)', borderRadius: 'var(--r-md)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' }}>Selected Services</div>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {rescue.selected_services.map((srv, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>• {srv.service_name}</span>
+                      <span style={{ color: 'var(--cyan-400)', fontWeight: 700 }}>
+                        {srv.base_price?.toLocaleString('vi-VN')}₫ / {srv.unit || 'turn'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-dim)', display: 'grid', gap: 10 }}>
               {rescue.workshop_id ? (
                 <button className="btn btn-success" onClick={handleSafeCheck} disabled={isSending} style={{ width: '100%' }}>
@@ -1380,7 +1406,7 @@ export default function UserSOS() {
               : selectedHistoryItem.custom_emergency_type || 'Other rescue request'));
     const phoneNum = selectedHistoryItem.sender_phone || 'Not provided';
     const coordsText = `Coords: ${selectedHistoryItem.initial_lat?.toFixed(4)}, ${selectedHistoryItem.initial_lng?.toFixed(4)}`;
-    const timeText = new Date(selectedHistoryItem.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const timeText = new Date(selectedHistoryItem.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     const dateText = new Date(selectedHistoryItem.created_at).toLocaleDateString();
 
     const volObj = selectedHistoryItem.assigned_volunteer_id || selectedHistoryItem.assigned_staff_id;
@@ -1568,7 +1594,7 @@ export default function UserSOS() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {selectedHistoryItem.selected_services.map((srv, sIdx) => (
                 <span key={sIdx} style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 4 }}>
-                  {srv.service_name} {srv.base_price ? `(${srv.base_price.toLocaleString('vi-VN')}₫)` : ''}
+                  {srv.service_name} {srv.base_price ? `(${srv.base_price.toLocaleString('vi-VN')}₫ / ${srv.unit || 'turn'})` : ''}
                 </span>
               ))}
             </div>
@@ -1606,7 +1632,7 @@ export default function UserSOS() {
   ];
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
       <div className="page-header">
         <h1>SOS & Rescue Center</h1>
         <p>Submit rescue requests, track rescue vehicles in real time, and manage emergency contacts</p>
@@ -2134,7 +2160,15 @@ export default function UserSOS() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <button className="btn btn-ghost btn-sm" style={{ padding: '6px 8px' }} title="Remove from list" onClick={() => handleRemoveApiContact(c._id || c.id || c.user_id)}>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: '6px 8px' }} title="Remove from list" onClick={() => {
+                        setContactToDelete(c._id || c.id || c.user_id);
+                        setConfirmModal({
+                          isOpen: true,
+                          title: 'Remove Contact',
+                          message: 'Are you sure you want to remove this contact from your emergency contact list?',
+                          type: 'delete_contact'
+                        });
+                      }}>
                         <Trash2 size={14} color="var(--red-400)" />
                       </button>
                     </div>
@@ -2321,7 +2355,7 @@ export default function UserSOS() {
                     })}
 
                     {/* Pagination Controls */}
-                    {historyTotalPages > 1 && (
+                    {historyTotalItems > 0 && (
                       <div className="flex items-center justify-between" style={{ marginTop: 16, padding: '8px 4px', flexWrap: 'wrap', gap: 12 }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                           Showing <strong style={{ color: 'var(--text-primary)' }}>{historyTotalItems === 0 ? 0 : (historyPage - 1) * 5 + 1}-{Math.min(historyPage * 5, historyTotalItems)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{historyTotalItems}</strong> requests
@@ -2493,6 +2527,9 @@ export default function UserSOS() {
                     await submitCancelSOS();
                   } else if (confirmModal.type === 'safe') {
                     await submitSafeCheck();
+                  } else if (confirmModal.type === 'delete_contact' && contactToDelete) {
+                    await handleRemoveApiContact(contactToDelete);
+                    setContactToDelete(null);
                   }
                 }}
               >

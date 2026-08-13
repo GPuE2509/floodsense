@@ -4,6 +4,7 @@ import {
   User, ShieldAlert, Clock, AlertTriangle, ArrowRight, ShieldCheck, Trash2, Sliders, ChevronLeft, ChevronRight, Archive
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 function ActionBadge({ action }) {
   const configs = {
@@ -65,6 +66,8 @@ export default function OperationLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [logToDelete, setLogToDelete] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchLogs = async (currentPage = page, isRefresh = false) => {
     if (isRefresh) {
@@ -129,21 +132,26 @@ export default function OperationLogs() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to permanently delete this audit log record?");
-    if (!confirmDelete) return;
+  const handleDelete = (id) => {
+    setLogToDelete(id);
+  };
 
+  const executeDeleteLog = async (id) => {
     try {
+      setIsSaving(true);
       const res = await apiService.delete(`/auth/admin/system-logs/${id}`);
       if (res && res.success) {
         setLogs((prev) => prev.filter(log => log.id !== id));
         setTotal((prev) => Math.max(0, prev - 1));
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Audit log deleted successfully.', type: 'success' } }));
       } else {
-        alert(res?.message || 'Failed to delete operation log.');
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: res?.message || 'Failed to delete operation log.', type: 'error' } }));
       }
     } catch (err) {
       console.error('Error deleting operation log:', err);
-      alert(err.message || 'Error occurred while deleting operation log.');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Error occurred while deleting operation log.', type: 'error' } }));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -308,7 +316,7 @@ export default function OperationLogs() {
           {/* Pagination */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: 16 }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 0 }}>
-              Showing {total === 0 ? 0 : (page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} records
+              Show {total === 0 ? 0 : (page - 1) * limit + 1}–{Math.min(page * limit, total)} / {total} Audit Log
             </span>
             <div className="flex gap-2">
               <button
@@ -339,6 +347,18 @@ export default function OperationLogs() {
           </div>
         </>
       )}
+      <ConfirmModal
+        isOpen={!!logToDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to permanently delete this audit log record?"
+        loading={isSaving}
+        onConfirm={async () => {
+          const id = logToDelete;
+          await executeDeleteLog(id);
+          setLogToDelete(null);
+        }}
+        onCancel={() => setLogToDelete(null)}
+      />
     </div>
   );
 }

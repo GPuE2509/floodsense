@@ -55,21 +55,26 @@ export default function SystemNotifications() {
       });
 
       if (res.success) {
+        const msg = `Successfully dispatched notification to ${res.count} users.`;
         setFeedback({ 
           type: 'success', 
-          message: `Successfully dispatched notification to ${res.count} users.` 
+          message: msg
         });
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg, type: 'success' } }));
         setTitle('');
         setBody('');
         
         // Trigger a local refresh so the sender's own ticker updates immediately
         window.dispatchEvent(new CustomEvent('unread-count-changed'));
       } else {
-        setFeedback({ type: 'error', message: res.message || 'Failed to dispatch notification.' });
+        const msg = res.message || 'Failed to dispatch notification.';
+        setFeedback({ type: 'error', message: msg });
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg, type: 'error' } }));
       }
     } catch (err) {
       console.error(err);
       setFeedback({ type: 'error', message: 'An error occurred while sending the notification.' });
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'An error occurred while sending the notification.', type: 'error' } }));
     } finally {
       setLoading(false);
     }

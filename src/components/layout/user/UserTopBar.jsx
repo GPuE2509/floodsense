@@ -201,11 +201,11 @@ export default function UserTopBar({
               {invitations.length > 0 && <span className="notif-badge">{invitations.length}</span>}
             </button>
           </div>
-          <div style={{ position: 'relative' }} ref={notifDropdownRef}>
+          <div style={{ position: 'relative' }}>
             <button
               className="topbar-btn relative"
               title="Notification"
-              onClick={handleToggleNotifDropdown}
+              onClick={() => { if (onNavigate) onNavigate('user-notifications'); }}
             >
               <Bell size={15} />
               {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}

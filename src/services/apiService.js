@@ -4,7 +4,7 @@
  * Easily switch BASE_URL to connect to your real Backend Server.
  */
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
+const BASE_URL = 'http://localhost:5000/api'; // Change to actual backend URL when ready
 
 let isRefreshing = false;
 let refreshQueue = [];
@@ -37,7 +37,7 @@ async function request(endpoint, options = {}, isRetry = false) {
 
   // Set timeout controller
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 10000); // 10s timeout default
+  const id = setTimeout(() => controller.abort(), 30000); // 10s timeout default
   config.signal = controller.signal;
 
   try {
@@ -46,7 +46,7 @@ async function request(endpoint, options = {}, isRetry = false) {
 
     if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh-token') && !isRetry) {
       const refreshToken = sessionStorage.getItem('refresh_token') || localStorage.getItem('refresh_token');
-      
+
       if (!refreshToken) {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
@@ -99,7 +99,7 @@ async function request(endpoint, options = {}, isRetry = false) {
       } catch (err) {
         processQueue(err, null);
         isRefreshing = false;
-        
+
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
         sessionStorage.removeItem('auth_token');
@@ -150,7 +150,7 @@ export const apiService = {
       ...(token && { Authorization: `Bearer ${token}` }),
       ...headers,
     };
-    
+
     try {
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         method,
@@ -160,7 +160,7 @@ export const apiService = {
 
       if (response.status === 401 && !isRetry) {
         const refreshToken = sessionStorage.getItem('refresh_token') || localStorage.getItem('refresh_token');
-        
+
         if (!refreshToken) {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
@@ -209,7 +209,7 @@ export const apiService = {
         } catch (err) {
           processQueue(err, null);
           isRefreshing = false;
-          
+
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
           sessionStorage.removeItem('auth_token');
@@ -237,7 +237,7 @@ export const apiService = {
       ...(token && { Authorization: `Bearer ${token}` }),
       ...headers,
     };
-    
+
     try {
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'GET',
@@ -246,7 +246,7 @@ export const apiService = {
 
       if (response.status === 401 && !isRetry) {
         const refreshToken = sessionStorage.getItem('refresh_token') || localStorage.getItem('refresh_token');
-        
+
         if (!refreshToken) {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
@@ -295,7 +295,7 @@ export const apiService = {
         } catch (err) {
           processQueue(err, null);
           isRefreshing = false;
-          
+
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
           sessionStorage.removeItem('auth_token');

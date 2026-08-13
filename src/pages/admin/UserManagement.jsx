@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { users } from '../../data/mockData';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useAuth } from '../../hooks/useAuth';
 
 function FloodWarningBadge({ level, config, calib_empty_cm }) {
@@ -16,31 +17,6 @@ function FloodWarningBadge({ level, config, calib_empty_cm }) {
     return <span className="badge badge-green"><span style={{ width: 6, height: 6, background: 'var(--green-400)', borderRadius: '50%', display: 'inline-block' }} /> {Math.round(current * 10) / 10} cm</span>;
   }
   return <span className="badge badge-gray" style={{ color: 'var(--text-muted)' }}><span style={{ width: 6, height: 6, background: '#64748b', borderRadius: '50%', display: 'inline-block' }} /> No water</span>;
-}
-
-function ConfirmModal({ title, message, onConfirm, onCancel, variant = 'danger' }) {
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <AlertTriangle size={18} color={variant === 'danger' ? 'var(--red-400)' : 'var(--orange-400)'} />
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{title}</span>
-          </div>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onCancel}><X size={16} /></button>
-        </div>
-        <div className="modal-body">
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{message}</p>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
-          <button className={`btn btn-sm ${variant === 'danger' ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 
@@ -238,7 +214,7 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
   const [roleRequests, setRoleRequests] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 10;
   const [systemConfig, setSystemConfig] = useState(null);
 
   useEffect(() => {
@@ -307,10 +283,11 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
           setUserList(usersResponse.users);
         }
         setDetailRequestModal(null);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Request successfully ${action === 'approve' ? 'approved' : 'rejected'}!`, type: 'success' } }));
       }
     } catch (err) {
       console.error(`Failed to ${action} request:`, err);
-      alert(err.message || "Operation failed.");
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || "Operation failed.", type: 'error' } }));
     } finally {
       setActionLoading(false);
     }
@@ -331,10 +308,12 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
       const response = await apiService.patch(`/auth/admin/users/${userId}/role`, { role: newRole });
       if (response && response.success) {
         setUserList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Role updated successfully!", type: 'success' } }));
       } else {
         throw new Error(response.message || "Role update failed.");
       }
     } catch (err) {
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || "An error occurred while connecting to the server.", type: 'error' } }));
       throw new Error(err.message || "An error occurred while connecting to the server.");
     }
   };
@@ -388,21 +367,24 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
       onConfirm: async () => {
         const nextStatus = u.status === 'active' ? 'locked' : 'active';
         try {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
           const response = await apiService.patch(`/auth/admin/users/${id}/status`, { status: nextStatus });
           if (response && response.success) {
             setUserList(prev => prev.map(uu => uu.id === id ? { ...uu, status: nextStatus } : uu));
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Account status updated successfully to ${nextStatus}!`, type: 'success' } }));
           } else {
-            alert(response.message || "Status update failed.");
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: response.message || "Status update failed.", type: 'error' } }));
           }
         } catch (err) {
           console.error('Error toggling lock:', err);
-          alert(err.message || "Server connection error.");
+          window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || "Server connection error.", type: 'error' } }));
         } finally {
           setConfirmModal(null);
         }
       },
       onCancel: () => setConfirmModal(null),
-      variant: u.status === 'active' ? 'danger' : 'primary',
+      confirmText: u.status === 'active' ? 'Lock' : 'Unlock',
+      variant: u.status === 'active' ? 'warning' : 'primary',
     });
   };
 
@@ -753,7 +735,7 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
         </div>
       )}
 
-      {confirmModal && <ConfirmModal {...confirmModal} />}
+      {confirmModal && <ConfirmModal isOpen={!!confirmModal} {...confirmModal} />}
       {roleModal && <ChangeRoleModal user={roleModal} onClose={() => setRoleModal(null)} onConfirm={handleUpdateRole} />}
       {detailRequestModal && <RoleRequestDetailModal request={detailRequestModal} onClose={() => setDetailRequestModal(null)} onAction={handleActionRequest} loading={actionLoading} />}
     </div>

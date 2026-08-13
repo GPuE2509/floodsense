@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Phone, AlertTriangle, Info, PhoneCall, Waves, HeartPulse, Truck, LifeBuoy, FireExtinguisher, SquarePlus, Baby, Activity, Heart, Car, Loader } from 'lucide-react';
+import { Shield, Phone, AlertTriangle, Info, PhoneCall, Waves, HeartPulse, Truck, LifeBuoy, FireExtinguisher, SquarePlus, Baby, Activity, Heart, Car, Loader, X } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
 const ACTION_ICONS = {
@@ -57,6 +57,7 @@ const EmergencyGuidelines = ({ onNavigate }) => {
   const [hotlines, setHotlines] = useState([]);
   const [guidelines, setGuidelines] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGuideline, setSelectedGuideline] = useState(null);
 
   useEffect(() => {
     const fetchGuidelines = async () => {
@@ -183,7 +184,7 @@ const EmergencyGuidelines = ({ onNavigate }) => {
                   </div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.text, lineHeight: 1 }}>{h.phone_number}</div>
                 </div>
-                <DraggableTitle className="premium-title hide-scrollbar" style={{ fontSize: '1rem', fontWeight: 700, color: colors.text, textAlign: 'center', marginBottom: desc ? 12 : 0, width: '100%', flexShrink: 0 }}>{h.title}</DraggableTitle>
+                <div title={h.title} style={{ fontSize: '1rem', fontWeight: 700, color: colors.text, textAlign: 'center', marginBottom: desc ? 12 : 0, width: '100%', flexShrink: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{h.title}</div>
                 
                 {desc && (
                   <div className="hide-scrollbar" style={{ 
@@ -210,7 +211,7 @@ const EmergencyGuidelines = ({ onNavigate }) => {
           {guidelines.map((g, i) => {
             const colors = getColorData(g.color || 'blue');
             return (
-              <div key={i} className="card premium-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '420px', background: colors.bg, borderColor: colors.border }}>
+              <div key={i} className="card premium-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '420px', background: colors.bg, borderColor: colors.border, cursor: 'pointer' }} onClick={() => setSelectedGuideline(g)}>
                 <div style={{ 
                   display: 'flex', alignItems: 'center', padding: '16px 20px', 
                   borderBottom: `1px solid ${colors.border}`, color: colors.text,
@@ -241,6 +242,115 @@ const EmergencyGuidelines = ({ onNavigate }) => {
           })}
         </div>
       </section>
+      {selectedGuideline && (() => {
+        const colors = getColorData(selectedGuideline.color || 'blue');
+        return (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 20
+          }} onClick={() => setSelectedGuideline(null)}>
+            <div style={{
+              background: '#0d1527',
+              border: `1px solid ${colors.border}`,
+              borderRadius: 'var(--r-lg)',
+              width: '100%',
+              maxWidth: 540,
+              boxShadow: `0 10px 40px ${colors.border}44`,
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '90vh',
+              overflow: 'hidden'
+            }} onClick={e => e.stopPropagation()}>
+              
+              {/* Modal Header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: `1px solid ${colors.border}`,
+                background: 'rgba(255, 255, 255, 0.02)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: colors.text }}>
+                  {renderIcon(selectedGuideline)}
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {selectedGuideline.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedGuideline(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4,
+                    borderRadius: '50%',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1 }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
+                  Please follow the official instructions below to ensure safety during emergencies:
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {selectedGuideline.tips.map((tip, idx) => (
+                    <li key={idx} style={{ display: 'flex', alignItems: 'flex-start' }}>
+                      <div style={{
+                        marginTop: 6,
+                        marginRight: 14,
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        background: colors.text,
+                        flexShrink: 0,
+                        boxShadow: `0 0 10px ${colors.text}`
+                      }} />
+                      <span style={{ color: 'var(--text-primary)', fontSize: '0.98rem', lineHeight: 1.6, fontWeight: 500 }}>
+                        {tip}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '14px 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'rgba(255, 255, 255, 0.01)',
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setSelectedGuideline(null)}
+                  style={{ background: colors.text, border: 'none', color: '#000', fontWeight: 700 }}
+                >
+                  Understood
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { apiService } from '../../services/apiService';
 import VolunteerRegistrationModal from '../../components/profile/VolunteerRegistrationModal';
 import WorkshopRegistrationModal from '../../components/profile/WorkshopRegistrationModal';
 import WorkshopEditModal from '../../components/profile/WorkshopEditModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function UserProfile({
   avatarUrl,
@@ -32,6 +33,7 @@ export default function UserProfile({
   const [createdAt, setCreatedAt] = useState('');
   const [saved, setSaved] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showDeleteAvatarConfirm, setShowDeleteAvatarConfirm] = useState(false);
 
   // Mobile collapse states
   const [isMobile, setIsMobile] = useState(false);
@@ -163,45 +165,50 @@ export default function UserProfile({
     }
   };
 
-  const handleDeleteAvatar = async () => {
-    if (window.confirm("Are you sure you want to delete your profile picture?")) {
-      setIsUploadingAvatar(true);
-      setSaveError('');
-      try {
-        const response = await apiService.delete('/auth/profile/avatar');
-        if (onAvatarChange) {
-          onAvatarChange('');
-        }
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      } catch (error) {
-        console.error('Failed to delete avatar:', error);
-        const errMsg = error.response?.data?.message || error.message || "Error when deleting avatar from the server.";
-        setSaveError(errMsg);
-      } finally {
-        setIsUploadingAvatar(false);
+  const handleDeleteAvatar = () => {
+    setShowDeleteAvatarConfirm(true);
+  };
+
+  const executeDeleteAvatar = async () => {
+    setIsUploadingAvatar(true);
+    setSaveError('');
+    try {
+      const response = await apiService.delete('/auth/profile/avatar');
+      if (onAvatarChange) {
+        onAvatarChange('');
       }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      console.error('Failed to delete avatar:', error);
+      const errMsg = error.response?.data?.message || error.message || "Error when deleting avatar from the server.";
+      setSaveError(errMsg);
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
   const handleCancelVolunteerRequest = async () => {
-    setShowCancelConfirmModal(false);
     const isWorkshop = localPendingRequest?.requestedRole === 'workshop' || role === 'workshop';
     
     try {
+      setIsTogglingStatus(true);
       if (isWorkshop) {
         await apiService.put('/workshops/me/cancel');
-        setToastMessage(role === 'workshop' ? "Successfully canceled workshop registration." : "The request to register to open a workshop has been successfully canceled.");
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: role === 'workshop' ? "Successfully canceled workshop registration." : "The request to register to open a workshop has been successfully canceled.", type: 'success' } }));
       } else {
         await apiService.put('/volunteers/me/cancel');
-        setToastMessage(role === 'volunteer' ? "Successfully withdrawn from the Rescue Team." : "Successfully canceled volunteer registration request.");
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: role === 'volunteer' ? "Successfully withdrawn from the Rescue Team." : "Successfully canceled volunteer registration request.", type: 'success' } }));
       }
+      setShowCancelConfirmModal(false);
       setTimeout(() => {
         window.location.reload();
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error('Failed to cancel/resign:', error);
       alert(error.response?.data?.message || "Error while performing operation.");
+    } finally {
+      setIsTogglingStatus(false);
     }
   };
 
@@ -237,8 +244,7 @@ export default function UserProfile({
         if (onUserNameChange) onUserNameChange(u.full_name || '');
         setPhone(u.phone || '');
         setIsEditing(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Profile updated successfully!", type: 'success' } }));
       }
     } catch (error) {
       console.error('Failed to update user profile:', error);
@@ -269,11 +275,7 @@ export default function UserProfile({
       setNewPw('');
       setConfirmPw('');
       
-      alert("Password changed successfully! You will be automatically logged out for security. Please log in again with new password.");
-      
-      if (onLogout) {
-        onLogout();
-      }
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Password changed successfully!", type: 'success' } }));
     } catch (error) {
       console.error('Failed to change password:', error);
       const errMsg = error.response?.data?.message || error.message || "The current password is incorrect or an error has occurred.";
@@ -916,8 +918,7 @@ export default function UserProfile({
         initialData={workshopProfile}
         onSuccess={async () => {
           setShowWorkshopEditModal(false);
-          setToastMessage("Updated Workshop information successfully!");
-          setTimeout(() => setToastMessage(''), 3000);
+          window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Updated Workshop information successfully!", type: 'success' } }));
 
           try {
             const response = await apiService.get('/workshops/me');
@@ -930,82 +931,58 @@ export default function UserProfile({
         }}
       />
 
-      {showCancelConfirmModal && (
-        <div className="modal-overlay" onClick={() => setShowCancelConfirmModal(false)} style={{ zIndex: 10000 }}>
-          <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertTriangle size={18} color="var(--red-400)" />
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>
-                  {localPendingRequest?.requestedRole === 'workshop' 
-                    ? "Cancel the request to register to open a workshop" 
-                    : (role === 'volunteer' 
-                        ? "Withdraw from the Rescue Team" 
-                        : (role === 'workshop' 
-                            ? "Cancel workshop registration" 
-                            : "Cancel rescue registration request"))}
-                </span>
-              </div>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowCancelConfirmModal(false)}>
-                <X size={16} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                {localPendingRequest?.requestedRole === 'workshop' 
-                  ? "Are you sure you want to cancel your registration request to open a workshop?"
-                  : (role === 'volunteer' 
-                      ? "Are you sure you want to withdraw from the Rescue Team? Your account will return to a normal member." 
-                      : (role === 'workshop'
-                          ? "Are you sure you want to cancel your workshop registration? Your shop will no longer appear on the community map."
-                          : "Are you sure you want to cancel your Volunteer Rescue registration request?"))}
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowCancelConfirmModal(false)}>Cancel</button>
-              <button className="btn btn-danger btn-sm" onClick={handleCancelVolunteerRequest}>
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showCancelConfirmModal}
+        title={localPendingRequest?.requestedRole === 'workshop' 
+          ? "Cancel the request to register to open a workshop" 
+          : (role === 'volunteer' 
+              ? "Withdraw from the Rescue Team" 
+              : (role === 'workshop' 
+                  ? "Cancel workshop registration" 
+                  : "Cancel rescue registration request"))}
+        message={localPendingRequest?.requestedRole === 'workshop' 
+          ? "Are you sure you want to cancel your registration request to open a workshop?"
+          : (role === 'volunteer' 
+              ? "Are you sure you want to withdraw from the Rescue Team? Your account will return to a normal member." 
+              : (role === 'workshop'
+                  ? "Are you sure you want to cancel your workshop registration? Your shop will no longer appear on the community map."
+                  : "Are you sure you want to cancel your Volunteer Rescue registration request?"))}
+        confirmText="Confirm"
+        loading={isTogglingStatus}
+        onConfirm={handleCancelVolunteerRequest}
+        onCancel={() => setShowCancelConfirmModal(false)}
+      />
 
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirmModal && (
-        <div className="modal-overlay" onClick={() => setShowLogoutConfirmModal(false)} style={{ zIndex: 10000 }}>
-          <div className="modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <LogOut size={18} color="var(--red-400)" />
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>Confirm logout</span>
-              </div>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                Are you sure you want to log out of the system?
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowLogoutConfirmModal(false)}>Cancel</button>
-              <button className="btn btn-danger btn-sm" onClick={() => {
-                setShowLogoutConfirmModal(false);
-                if (onLogout) onLogout();
-              }}>
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showLogoutConfirmModal}
+        title="Confirm logout"
+        message="Are you sure you want to log out of the system?"
+        confirmText="Confirm"
+        type="primary"
+        onConfirm={() => {
+          setShowLogoutConfirmModal(false);
+          if (onLogout) onLogout();
+        }}
+        onCancel={() => setShowLogoutConfirmModal(false)}
+      />
 
-      {/* Success Toast */}
       {toastMessage && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: 'var(--green-400)', color: '#fff', padding: '12px 20px', borderRadius: 'var(--r-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 100000, background: 'var(--green-400)', color: '#fff', padding: '12px 20px', borderRadius: 'var(--r-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600 }}>
           <CheckCircle size={18} />
           {toastMessage}
         </div>
       )}
+      <ConfirmModal
+        isOpen={showDeleteAvatarConfirm}
+        title="Delete Profile Picture"
+        message="Are you sure you want to delete your profile picture?"
+        loading={isUploadingAvatar}
+        onConfirm={async () => {
+          await executeDeleteAvatar();
+          setShowDeleteAvatarConfirm(false);
+        }}
+        onCancel={() => setShowDeleteAvatarConfirm(false)}
+      />
     </div>
   );
 }

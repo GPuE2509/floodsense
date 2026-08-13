@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
+import { Modal } from 'antd';
+import ConfirmModal from './ConfirmModal';
 import { MapContainer, TileLayer, CircleMarker, Popup, Circle, Marker, Rectangle, Pane, useMap, ZoomControl, Polyline, useMapEvents } from 'react-leaflet';
 import { CloudRain, Search, Wrench, Star, Phone, Clock, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, ThumbsUp, ThumbsDown, MapPin, Loader, Compass, LocateFixed, AlertTriangle, Activity, Home, Filter, Maximize, Minimize, Navigation, Bookmark, Share2, MessageSquare, Cpu, Battery, Camera, CheckCircle, Layers, Trash2, History, BarChart2, Calendar, ArrowLeft, Zap, Waves, Route, Plus, Edit } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Line } from 'recharts';
@@ -312,7 +314,15 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
   const [isLocating, setIsLocating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLocalDropdownExpanded, setIsLocalDropdownExpanded] = useState(true);
-  const [toast, setToast] = useState(null);
+  const setToast = (obj) => {
+    if (!obj) return;
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: obj.message,
+        type: obj.type || 'info'
+      }
+    }));
+  };
   const searchContainerRef = useRef(null);
   const wrapperRef = useRef(null);
   const filterPillsRef = useRef(null);
@@ -769,6 +779,11 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
 
   const [devices, setDevices] = useState([]);
   const [selectedSensor, setSelectedSensor] = useState(null);
+  const [sensorWeather, setSensorWeather] = useState(null);
+  const [sensorForecast, setSensorForecast] = useState(null);
+  const [showForecastModal, setShowForecastModal] = useState(false);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [expandedDay, setExpandedDay] = useState(null);
   const latestSensor = selectedSensor ? (devices.find(d => d.id === selectedSensor.id) || selectedSensor) : null;
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -830,6 +845,8 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
   const [editingWarningRoadId, setEditingWarningRoadId] = useState(null);
   const [roadToDelete, setRoadToDelete] = useState(null);
   const [zoneToDelete, setZoneToDelete] = useState(null);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+  const [responseToDelete, setResponseToDelete] = useState(null);
 
   const [warningRoadStartSearchQuery, setWarningRoadStartSearchQuery] = useState('');
   const [warningRoadEndSearchQuery, setWarningRoadEndSearchQuery] = useState('');
@@ -1174,6 +1191,13 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
   const [selectedHazard, setSelectedHazard] = useState(null);
   const [hazardVotes, setHazardVotes] = useState({});
 
+  // Clear selected detail items when switching or disabling filters
+  useEffect(() => {
+    if (activeFilter !== 'workshops') setSelectedWs(null);
+    if (activeFilter !== 'sensors') setSelectedSensor(null);
+    if (activeFilter !== 'hazards') setSelectedHazard(null);
+  }, [activeFilter]);
+
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     if (!token) return;
@@ -1313,7 +1337,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
           const initialVotes = {};
           approvedHazards.forEach(report => {
             if (report.voters && report.voters.length > 0) {
-              const myVote = report.voters.find(v => v.user_id === userId);
+              const myVote = report.voters.find(v => (v.user_id?._id || v.user_id)?.toString() === userId.toString());
               if (myVote) {
                 initialVotes[report._id] = myVote.vote_type;
               }
@@ -1515,6 +1539,82 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
     const sensorPollId = setInterval(pollSensorDetail, 5000);
     return () => clearInterval(sensorPollId);
   }, [selectedSensor?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!selectedSensor) {
+      setSensorWeather(null);
+      return;
+    }
+    const fetchWeatherForSensor = async () => {
+      try {
+        const lat = selectedSensor.lat || selectedSensor.latitude;
+        const lon = selectedSensor.lng || selectedSensor.longitude;
+        if (lat !== undefined && lon !== undefined) {
+          const res = await apiService.get(`/weather/current?lat=${lat}&lon=${lon}`);
+          if (res && res.success && res.data) {
+            setSensorWeather(res.data);
+          } else if (res && res.weather) {
+            setSensorWeather(res);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching sensor weather:', err);
+      }
+    };
+    fetchWeatherForSensor();
+  }, [selectedSensor?.id]);
+
+  const handleOpenForecast = async () => {
+    if (!latestSensor) return;
+    const lat = latestSensor.lat || latestSensor.latitude;
+    const lon = latestSensor.lng || latestSensor.longitude;
+    if (lat === undefined || lon === undefined) return;
+    
+    setForecastLoading(true);
+    setShowForecastModal(true);
+    setExpandedDay(null);
+    try {
+      const res = await apiService.get(`/weather/forecast?lat=${lat}&lon=${lon}`);
+      if (res && res.success && res.data && res.data.list) {
+        const daysMap = {};
+        res.data.list.forEach(item => {
+          const date = new Date(item.dt * 1000);
+          const dateStr = date.toLocaleDateString('en-US', { weekday: 'long' });
+          const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+          
+          if (!daysMap[dateStr]) {
+            daysMap[dateStr] = {
+              day: dateStr,
+              temp: Math.round(item.main.temp),
+              description: item.weather[0].description,
+              icon: item.weather[0].icon,
+              hasRain: item.weather[0].main === 'Rain',
+              hours: []
+            };
+          }
+          
+          if (item.weather[0].main === 'Rain') {
+            daysMap[dateStr].hasRain = true;
+          }
+          
+          daysMap[dateStr].hours.push({
+            time: timeStr,
+            temp: Math.round(item.main.temp),
+            description: item.weather[0].description,
+            icon: item.weather[0].icon,
+            hasRain: item.weather[0].main === 'Rain',
+            rainVolume: item.rain ? (item.rain['3h'] || 0) : 0
+          });
+        });
+        
+        setSensorForecast(Object.values(daysMap));
+      }
+    } catch (err) {
+      console.error('Failed to fetch forecast:', err);
+    } finally {
+      setForecastLoading(false);
+    }
+  };
 
   const voteHazard = async (reportId, type) => {
     let userId = currentUser?._id || currentUser?.id;
@@ -1720,8 +1820,11 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
     }
   };
 
-  const deleteWsReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review/comment?')) return;
+  const deleteWsReview = (reviewId) => {
+    setReviewToDelete(reviewId);
+  };
+
+  const executeDeleteWsReview = async (reviewId) => {
     if (typeof selectedWs?.id === 'string' && selectedWs.id.startsWith('ws')) {
       setReviewsList(prev => prev.filter(r => (r._id || r.id) !== reviewId));
       setWsReviews(prev => ({
@@ -1744,8 +1847,11 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
     }
   };
 
-  const deleteWsOwnerResponse = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete your response to this review?')) return;
+  const deleteWsOwnerResponse = (reviewId) => {
+    setResponseToDelete(reviewId);
+  };
+
+  const executeDeleteWsOwnerResponse = async (reviewId) => {
     if (typeof selectedWs?.id === 'string' && selectedWs.id.startsWith('ws')) {
       setReviewsList(prev => prev.map(r => {
         if ((r._id || r.id) === reviewId) {
@@ -1879,11 +1985,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
       </div>
 
       <div style={{ flex: 1, background: '#080d16', position: 'relative', overflow: 'hidden', zIndex: 0 }}>
-        {toast && (
-          <div style={{ position: 'absolute', top: 20, right: 20, background: toast.type === 'error' ? '#ef4444' : '#10b981', color: '#fff', padding: '12px 20px', borderRadius: 8, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-            <AlertTriangle size={18} /> {toast.message}
-          </div>
-        )}
+
 
         {/* --- GOOGLE MAPS STYLE SEARCH PANEL --- */}
         <div className="map-search-panel-container">
@@ -2462,156 +2564,156 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                     const hasHazards = hazards.some(h => (h.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.description || '').toLowerCase().includes(searchQuery.toLowerCase()));
                     return searchQuery.trim() !== '' && (hasWorkshops || hasDevices || hasHazards);
                   })()) && (
-                    <div className="map-autocomplete-suggestions" style={{ maxHeight: 380, overflowY: 'auto' }}>
-                      {isSearching && (
-                        <div style={{ padding: '12px 16px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> Searching...
-                        </div>
-                      )}
-
-                      {/* Local Workshops Results */}
-                      {!isSearching && searchQuery.trim() !== '' && workshops.filter(w => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.address || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
-                        <div>
-                          <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--cyan-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workshops</div>
-                          {workshops.filter(w => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.address || '').toLowerCase().includes(searchQuery.toLowerCase())).map((ws, idx) => (
-                            <div
-                              key={`ws-${ws.id || idx}`}
-                              onClick={() => {
-                                handleWsMarkerClick(ws);
-                                setShowSuggestions(false);
-                              }}
-                              style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              onMouseEnter={(e) => e.target.style.background = 'rgba(6, 182, 214, 0.1)'}
-                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                            >
-                              🔧 {ws.name} ({ws.address || 'Workshop'})
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Local IoT Sensors Results */}
-                      {!isSearching && searchQuery.trim() !== '' && devices.filter(d => (d.device_name || d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.device_code || d.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.location || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
-                        <div>
-                          <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--green-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>IoT Sensors</div>
-                          {devices.filter(d => (d.device_name || d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.device_code || d.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.location || '').toLowerCase().includes(searchQuery.toLowerCase())).map((d, idx) => (
-                            <div
-                              key={`device-${d.id || idx}`}
-                              onClick={() => {
-                                setActiveFilter('sensors');
-                                setSelectedSensor(d);
-                                setSelectedWs(null);
-                                setSelectedHazard(null);
-                                if (d.lat && d.lng) {
-                                  setMapCenter([d.lat, d.lng]);
-                                } else if (latLngMap[d.id]) {
-                                  setMapCenter(latLngMap[d.id]);
-                                }
-                                setShowSuggestions(false);
-                                setMobileSheetState('half');
-                              }}
-                              style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              onMouseEnter={(e) => e.target.style.background = 'rgba(34, 197, 94, 0.1)'}
-                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                            >
-                              📶 {d.device_name || d.name} ({d.location || d.device_code || ''})
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Local Hazard Points Results */}
-                      {!isSearching && searchQuery.trim() !== '' && hazards.filter(h => (h.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.description || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
-                        <div>
-                          <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--orange-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hazard Points</div>
-                          {hazards.filter(h => (h.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.description || '').toLowerCase().includes(searchQuery.toLowerCase())).map((hz, idx) => (
-                            <div
-                              key={`hz-${hz._id || idx}`}
-                              onClick={() => {
-                                setActiveFilter('hazards');
-                                setSelectedHazard(hz);
-                                setSelectedWs(null);
-                                setSelectedSensor(null);
-                                if (hz.lat && hz.lng) {
-                                  setMapCenter([hz.lat, hz.lng]);
-                                }
-                                setShowSuggestions(false);
-                                setMobileSheetState('half');
-                              }}
-                              style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              onMouseEnter={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.1)'}
-                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                            >
-                              ⚠️ {hz.title || 'Hazard Report'} ({hz.description || ''})
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* OSM Geographic Areas */}
-                      {!isSearching && searchQuery.trim() !== '' && searchResults.length > 0 && (
-                        <div>
-                          <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Geographic Locations</div>
-                          {searchResults.map((res, idx) => (
-                            <div
-                              key={res.place_id || idx}
-                              onClick={() => {
-                                setMapCenter([Number(res.lat), Number(res.lon)]);
-                                setSearchedLocation({ lat: Number(res.lat), lng: Number(res.lon), name: res.display_name });
-                                setSearchQuery(res.display_name);
-                                setShowSuggestions(false);
-                                setMobileSheetState('half');
-                              }}
-                              style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: idx === searchResults.length - 1 ? 'none' : '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'}
-                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                            >
-                              📍 {res.display_name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {!isSearching && searchQuery.trim() === '' && activeFilter && activeFilter !== 'workshops' && (() => {
-                        let localData = [];
-                        if (activeFilter === 'sensors') localData = filteredDevices.map(d => ({ id: d.id, name: d.name, lat: d.lat || latLngMap[d.id]?.[0], lon: d.lng || latLngMap[d.id]?.[1] }));
-                        if (activeFilter === 'sos') localData = activeMissions.map(m => ({ id: m.id, name: `SOS: ${m.location}`, lat: m.lat, lon: m.lng }));
-                        if (activeFilter === 'shelter') localData = []; // add shelter data if any
-
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <div
-                              onClick={() => setIsLocalDropdownExpanded(!isLocalDropdownExpanded)}
-                              style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--bg-elevated)', borderBottom: isLocalDropdownExpanded ? '1px solid var(--border-dim)' : 'none' }}
-                            >
-                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                {localData.length} results
-                              </span>
-                              <ChevronDown size={16} color="var(--text-muted)" style={{ transform: isLocalDropdownExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                            </div>
-                            {isLocalDropdownExpanded && localData.map((res, idx) => {
-                              if (!res.lat || !res.lon) return null;
-                              return (
-                                <div
-                                  key={res.id || idx}
-                                  onClick={() => {
-                                    setMapCenter([res.lat, res.lon]);
-                                    setShowSuggestions(false);
-                                    setMobileSheetState('half');
-                                  }}
-                                  style={{ padding: '12px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: idx === localData.length - 1 ? 'none' : '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                  onMouseEnter={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.1)'}
-                                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                                >
-                                  📌 {res.name}
-                                </div>
-                              );
-                            })}
+                      <div className="map-autocomplete-suggestions" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                        {isSearching && (
+                          <div style={{ padding: '12px 16px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> Searching...
                           </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Local Workshops Results */}
+                        {!isSearching && searchQuery.trim() !== '' && workshops.filter(w => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.address || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                          <div>
+                            <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--cyan-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workshops</div>
+                            {workshops.filter(w => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.address || '').toLowerCase().includes(searchQuery.toLowerCase())).map((ws, idx) => (
+                              <div
+                                key={`ws-${ws.id || idx}`}
+                                onClick={() => {
+                                  handleWsMarkerClick(ws);
+                                  setShowSuggestions(false);
+                                }}
+                                style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                onMouseEnter={(e) => e.target.style.background = 'rgba(6, 182, 214, 0.1)'}
+                                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                              >
+                                🔧 {ws.name} ({ws.address || 'Workshop'})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Local IoT Sensors Results */}
+                        {!isSearching && searchQuery.trim() !== '' && devices.filter(d => (d.device_name || d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.device_code || d.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.location || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                          <div>
+                            <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--green-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>IoT Sensors</div>
+                            {devices.filter(d => (d.device_name || d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.device_code || d.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || (d.location || '').toLowerCase().includes(searchQuery.toLowerCase())).map((d, idx) => (
+                              <div
+                                key={`device-${d.id || idx}`}
+                                onClick={() => {
+                                  setActiveFilter('sensors');
+                                  setSelectedSensor(d);
+                                  setSelectedWs(null);
+                                  setSelectedHazard(null);
+                                  if (d.lat && d.lng) {
+                                    setMapCenter([d.lat, d.lng]);
+                                  } else if (latLngMap[d.id]) {
+                                    setMapCenter(latLngMap[d.id]);
+                                  }
+                                  setShowSuggestions(false);
+                                  setMobileSheetState('half');
+                                }}
+                                style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                onMouseEnter={(e) => e.target.style.background = 'rgba(34, 197, 94, 0.1)'}
+                                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                              >
+                                📶 {d.device_name || d.name} ({d.location || d.device_code || ''})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Local Hazard Points Results */}
+                        {!isSearching && searchQuery.trim() !== '' && hazards.filter(h => (h.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.description || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                          <div>
+                            <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--orange-400)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hazard Points</div>
+                            {hazards.filter(h => (h.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.description || '').toLowerCase().includes(searchQuery.toLowerCase())).map((hz, idx) => (
+                              <div
+                                key={`hz-${hz._id || idx}`}
+                                onClick={() => {
+                                  setActiveFilter('hazards');
+                                  setSelectedHazard(hz);
+                                  setSelectedWs(null);
+                                  setSelectedSensor(null);
+                                  if (hz.lat && hz.lng) {
+                                    setMapCenter([hz.lat, hz.lng]);
+                                  }
+                                  setShowSuggestions(false);
+                                  setMobileSheetState('half');
+                                }}
+                                style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                onMouseEnter={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.1)'}
+                                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                              >
+                                ⚠️ {hz.title || 'Hazard Report'} ({hz.description || ''})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* OSM Geographic Areas */}
+                        {!isSearching && searchQuery.trim() !== '' && searchResults.length > 0 && (
+                          <div>
+                            <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Geographic Locations</div>
+                            {searchResults.map((res, idx) => (
+                              <div
+                                key={res.place_id || idx}
+                                onClick={() => {
+                                  setMapCenter([Number(res.lat), Number(res.lon)]);
+                                  setSearchedLocation({ lat: Number(res.lat), lng: Number(res.lon), name: res.display_name });
+                                  setSearchQuery(res.display_name);
+                                  setShowSuggestions(false);
+                                  setMobileSheetState('half');
+                                }}
+                                style={{ padding: '10px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: idx === searchResults.length - 1 ? 'none' : '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                              >
+                                📍 {res.display_name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {!isSearching && searchQuery.trim() === '' && activeFilter && activeFilter !== 'workshops' && (() => {
+                          let localData = [];
+                          if (activeFilter === 'sensors') localData = filteredDevices.map(d => ({ id: d.id, name: d.name, lat: d.lat || latLngMap[d.id]?.[0], lon: d.lng || latLngMap[d.id]?.[1] }));
+                          if (activeFilter === 'sos') localData = activeMissions.map(m => ({ id: m.id, name: `SOS: ${m.location}`, lat: m.lat, lon: m.lng }));
+                          if (activeFilter === 'shelter') localData = []; // add shelter data if any
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <div
+                                onClick={() => setIsLocalDropdownExpanded(!isLocalDropdownExpanded)}
+                                style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--bg-elevated)', borderBottom: isLocalDropdownExpanded ? '1px solid var(--border-dim)' : 'none' }}
+                              >
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                  {localData.length} results
+                                </span>
+                                <ChevronDown size={16} color="var(--text-muted)" style={{ transform: isLocalDropdownExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                              </div>
+                              {isLocalDropdownExpanded && localData.map((res, idx) => {
+                                if (!res.lat || !res.lon) return null;
+                                return (
+                                  <div
+                                    key={res.id || idx}
+                                    onClick={() => {
+                                      setMapCenter([res.lat, res.lon]);
+                                      setShowSuggestions(false);
+                                      setMobileSheetState('half');
+                                    }}
+                                    style={{ padding: '12px 16px', fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer', borderBottom: idx === localData.length - 1 ? 'none' : '1px solid var(--border-dim)', transition: 'background 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                    onMouseEnter={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.1)'}
+                                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                                  >
+                                    📌 {res.name}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                 </div>
               </div>
 
@@ -2767,16 +2869,16 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                       } else {
                         setActiveFilter(isActive ? null : 'warning_roads');
                         setMobileSheetState('half');
-                         setWarningRoadStart(null);
-                         setWarningRoadEnd(null);
-                         setWarningRoadStartSearchQuery('');
-                         setWarningRoadEndSearchQuery('');
-                         setWarningRoadStartSuggestions([]);
-                         setWarningRoadEndSuggestions([]);
-                         setRoadAlternatives([]);
-                         setSelectRoadPointTarget(null);
-                       }
-                     }}>
+                        setWarningRoadStart(null);
+                        setWarningRoadEnd(null);
+                        setWarningRoadStartSearchQuery('');
+                        setWarningRoadEndSearchQuery('');
+                        setWarningRoadStartSuggestions([]);
+                        setWarningRoadEndSuggestions([]);
+                        setRoadAlternatives([]);
+                        setSelectRoadPointTarget(null);
+                      }
+                    }}>
                       <Route size={14} color="var(--cyan-400)" /> Warning Roads
                     </div>
                   )}
@@ -2819,7 +2921,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                           Back to list
                         </button>
                         <button
-                          onClick={() => setSelectedWs(null)}
+                          onClick={() => { setSelectedWs(null); setActiveFilter(null); }}
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
                         >
                           <X size={18} />
@@ -2838,7 +2940,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                           {selectedWs.cover_photo ? (
                             <>
                               <img
-                                src={selectedWs.cover_photo.startsWith('http') ? selectedWs.cover_photo : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${selectedWs.cover_photo.startsWith('/') ? selectedWs.cover_photo : `/${selectedWs.cover_photo}`}`}
+                                src={selectedWs.cover_photo.startsWith('http') ? selectedWs.cover_photo : `http://localhost:5000${selectedWs.cover_photo.startsWith('/') ? selectedWs.cover_photo : `/${selectedWs.cover_photo}`}`}
                                 alt={selectedWs.name}
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -3610,7 +3712,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                                 {ws.cover_photo ? (
                                   <>
                                     <img
-                                      src={ws.cover_photo.startsWith('http') ? ws.cover_photo : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${ws.cover_photo.startsWith('/') ? ws.cover_photo : `/${ws.cover_photo}`}`}
+                                      src={ws.cover_photo.startsWith('http') ? ws.cover_photo : `http://localhost:5000${ws.cover_photo.startsWith('/') ? ws.cover_photo : `/${ws.cover_photo}`}`}
                                       alt={ws.name}
                                       onError={(e) => {
                                         e.target.style.display = 'none';
@@ -3654,7 +3756,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                           Back to list
                         </button>
                         <button
-                          onClick={() => setSelectedSensor(null)}
+                          onClick={() => { setSelectedSensor(null); setActiveFilter(null); }}
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
                         >
                           <X size={18} />
@@ -3753,6 +3855,52 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                             <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--green-400)' }}>{latestSensor.battery_percent || 0} <span style={{ fontSize: '0.8rem' }}>%</span></div>
                           </div>
                         </div>
+
+                        {/* Weather Info */}
+                        {sensorWeather && (
+                          <div 
+                            onClick={handleOpenForecast}
+                            style={{ 
+                              background: 'rgba(14, 165, 233, 0.05)', 
+                              borderRadius: '12px', 
+                              border: '1px solid rgba(14, 165, 233, 0.2)', 
+                              padding: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              cursor: 'pointer',
+                              transition: 'transform 0.2s, background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.05)';
+                              e.currentTarget.style.transform = 'none';
+                            }}
+                          >
+                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {sensorWeather.weather?.[0]?.icon ? (
+                                <img src={`http://openweathermap.org/img/wn/${sensorWeather.weather[0].icon}@2x.png`} alt="weather icon" style={{ width: 36, height: 36 }} />
+                              ) : (
+                                <CloudRain size={20} color="var(--cyan-400)" />
+                              )}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>Local Weather</span>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--cyan-400)' }}>Forecast &rarr;</span>
+                              </div>
+                              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>{Math.round(sensorWeather.main?.temp || 0)}°C</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                                  ({sensorWeather.weather?.[0]?.description || 'N/A'})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Thresholds & Config */}
                         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-dim)', padding: '16px' }}>
@@ -3923,7 +4071,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                           Back to list
                         </button>
                         <button
-                          onClick={() => setSelectedHazard(null)}
+                          onClick={() => { setSelectedHazard(null); setActiveFilter(null); }}
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
                         >
                           <X size={18} />
@@ -4003,10 +4151,14 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                             <button
                               onClick={() => voteHazard(selectedHazard._id, 'confirm')}
                               style={{
-                                padding: '10px', borderRadius: 8, border: hazardVotes[selectedHazard._id] === 'confirm' ? '1px solid var(--green-400)' : '1px solid var(--border-dim)',
-                                background: hazardVotes[selectedHazard._id] === 'confirm' ? 'rgba(34,197,94,0.1)' : 'var(--bg-elevated)',
-                                color: hazardVotes[selectedHazard._id] === 'confirm' ? 'var(--green-400)' : 'var(--text-secondary)',
-                                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
+                                padding: '10px', borderRadius: 8, 
+                                border: hazardVotes[selectedHazard._id] === 'confirm' ? '1.5px solid #10b981' : '1px solid var(--border-dim)',
+                                background: hazardVotes[selectedHazard._id] === 'confirm' ? 'rgba(16,185,129,0.18)' : 'var(--bg-elevated)',
+                                color: hazardVotes[selectedHazard._id] === 'confirm' ? '#10b981' : 'var(--text-secondary)',
+                                fontSize: '0.8rem', 
+                                fontWeight: hazardVotes[selectedHazard._id] === 'confirm' ? '800' : '600', 
+                                boxShadow: hazardVotes[selectedHazard._id] === 'confirm' ? '0 0 12px rgba(16,185,129,0.25)' : 'none',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
                               }}
                             >
                               <ThumbsUp size={14} /> Still exists
@@ -4014,10 +4166,14 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                             <button
                               onClick={() => voteHazard(selectedHazard._id, 'deny')}
                               style={{
-                                padding: '10px', borderRadius: 8, border: hazardVotes[selectedHazard._id] === 'deny' ? '1px solid var(--red-400)' : '1px solid var(--border-dim)',
-                                background: hazardVotes[selectedHazard._id] === 'deny' ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
-                                color: hazardVotes[selectedHazard._id] === 'deny' ? 'var(--red-400)' : 'var(--text-secondary)',
-                                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
+                                padding: '10px', borderRadius: 8, 
+                                border: hazardVotes[selectedHazard._id] === 'deny' ? '1.5px solid #ef4444' : '1px solid var(--border-dim)',
+                                background: hazardVotes[selectedHazard._id] === 'deny' ? 'rgba(239,68,68,0.18)' : 'var(--bg-elevated)',
+                                color: hazardVotes[selectedHazard._id] === 'deny' ? '#ef4444' : 'var(--text-secondary)',
+                                fontSize: '0.8rem', 
+                                fontWeight: hazardVotes[selectedHazard._id] === 'deny' ? '800' : '600', 
+                                boxShadow: hazardVotes[selectedHazard._id] === 'deny' ? '0 0 12px rgba(239,68,68,0.25)' : 'none',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
                               }}
                             >
                               <CheckCircle size={14} /> Not anymore
@@ -4025,10 +4181,14 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                             <button
                               onClick={() => voteHazard(selectedHazard._id, 'false')}
                               style={{
-                                padding: '10px', borderRadius: 8, border: hazardVotes[selectedHazard._id] === 'false' ? '1px solid var(--orange-400)' : '1px solid var(--border-dim)',
-                                background: hazardVotes[selectedHazard._id] === 'false' ? 'rgba(249,115,22,0.1)' : 'var(--bg-elevated)',
-                                color: hazardVotes[selectedHazard._id] === 'false' ? 'var(--orange-400)' : 'var(--text-secondary)',
-                                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
+                                padding: '10px', borderRadius: 8, 
+                                border: hazardVotes[selectedHazard._id] === 'false' ? '1.5px solid #f97316' : '1px solid var(--border-dim)',
+                                background: hazardVotes[selectedHazard._id] === 'false' ? 'rgba(249,115,22,0.18)' : 'var(--bg-elevated)',
+                                color: hazardVotes[selectedHazard._id] === 'false' ? '#f97316' : 'var(--text-secondary)',
+                                fontSize: '0.8rem', 
+                                fontWeight: hazardVotes[selectedHazard._id] === 'false' ? '800' : '600', 
+                                boxShadow: hazardVotes[selectedHazard._id] === 'false' ? '0 0 12px rgba(249,115,22,0.25)' : 'none',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.2s'
                               }}
                             >
                               <ThumbsDown size={14} /> Wrong report
@@ -4132,9 +4292,9 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                 const query = emergencySearchQuery.trim().toLowerCase();
                 const visibleFacilities = query
                   ? categoryFiltered.filter(f =>
-                      (f.name || '').toLowerCase().includes(query) ||
-                      (f.address || '').toLowerCase().includes(query)
-                    )
+                    (f.name || '').toLowerCase().includes(query) ||
+                    (f.address || '').toLowerCase().includes(query)
+                  )
                   : categoryFiltered;
 
                 return (
@@ -4462,7 +4622,7 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Locate current location */}
                           <button
                             type="button"
@@ -4638,14 +4798,14 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
                                 try {
                                   const res = editingWarningRoadId
                                     ? await apiService.put(`/warning-roads/${editingWarningRoadId}`, {
-                                        road_name: newRoadName,
-                                        coordinates: selectedGeom.coordinates
-                                      })
+                                      road_name: newRoadName,
+                                      coordinates: selectedGeom.coordinates
+                                    })
                                     : await apiService.post('/warning-roads', {
-                                        road_name: newRoadName,
-                                        coordinates: selectedGeom.coordinates,
-                                        is_active: true
-                                      });
+                                      road_name: newRoadName,
+                                      coordinates: selectedGeom.coordinates,
+                                      is_active: true
+                                    });
                                   if (res && res.success) {
                                     setToast({ type: 'success', message: editingWarningRoadId ? 'Warning road updated successfully!' : 'Warning road saved successfully!' });
                                     setTimeout(() => setToast(null), 4000);
@@ -5478,161 +5638,57 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
           )}
         </MapContainer>
 
-        {/* Delete Warning Road Custom Confirmation Modal */}
-        {roadToDelete && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(8, 13, 22, 0.85)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 20000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 12
-          }}>
-            <div style={{
-              background: '#0f172a',
-              border: '1px solid #334155',
-              borderRadius: 14,
-              width: '90%',
-              maxWidth: 400,
-              padding: 24,
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-              gap: 16
-            }}>
-              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', fontWeight: 800 }}>Confirm Delete</h3>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.5 }}>
-                Are you sure you want to delete <strong style={{ color: '#fff' }}>"{roadToDelete.road_name}"</strong>? This action cannot be undone.
-              </p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button
-                  onClick={() => setRoadToDelete(null)}
-                  style={{
-                    padding: '8px 16px',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid #334155',
-                    borderRadius: 8,
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const id = roadToDelete._id;
-                    setRoadToDelete(null);
-                    await handleDeleteRoad(id);
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#ef4444',
-                    border: 'none',
-                    borderRadius: 8,
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#ef4444'; }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={!!roadToDelete}
+          title="Confirm Delete"
+          message={roadToDelete ? `Are you sure you want to delete "${roadToDelete.road_name}"? This action cannot be undone.` : ''}
+          position="absolute"
+          onConfirm={async () => {
+            const id = roadToDelete._id;
+            setRoadToDelete(null);
+            await handleDeleteRoad(id);
+          }}
+          onCancel={() => setRoadToDelete(null)}
+        />
 
-        {/* Delete Warning Zone Custom Confirmation Modal */}
-        {zoneToDelete && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(8, 13, 22, 0.85)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 20000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 12
-          }}>
-            <div style={{
-              background: '#0f172a',
-              border: '1px solid #334155',
-              borderRadius: 14,
-              width: '90%',
-              maxWidth: 400,
-              padding: 24,
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-              gap: 16
-            }}>
-              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', fontWeight: 800 }}>Confirm Delete</h3>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.5 }}>
-                Are you sure you want to delete warning zone <strong style={{ color: '#fff' }}>"{zoneToDelete.name}"</strong>? This action cannot be undone.
-              </p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button
-                  onClick={() => setZoneToDelete(null)}
-                  style={{
-                    padding: '8px 16px',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid #334155',
-                    borderRadius: 8,
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const id = zoneToDelete.id;
-                    setZoneToDelete(null);
-                    await handleDeleteZone(id);
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#ef4444',
-                    border: 'none',
-                    borderRadius: 8,
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#ef4444'; }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={!!zoneToDelete}
+          title="Confirm Delete"
+          message={zoneToDelete ? `Are you sure you want to delete warning zone "${zoneToDelete.name}"? This action cannot be undone.` : ''}
+          position="absolute"
+          onConfirm={async () => {
+            const id = zoneToDelete.id;
+            setZoneToDelete(null);
+            await handleDeleteZone(id);
+          }}
+          onCancel={() => setZoneToDelete(null)}
+        />
+
+        <ConfirmModal
+          isOpen={!!reviewToDelete}
+          title="Confirm Delete"
+          message="Are you sure you want to delete this review/comment? This action cannot be undone."
+          position="absolute"
+          onConfirm={async () => {
+            const id = reviewToDelete;
+            setReviewToDelete(null);
+            await executeDeleteWsReview(id);
+          }}
+          onCancel={() => setReviewToDelete(null)}
+        />
+
+        <ConfirmModal
+          isOpen={!!responseToDelete}
+          title="Confirm Delete"
+          message="Are you sure you want to delete your response to this review? This action cannot be undone."
+          position="absolute"
+          onConfirm={async () => {
+            const id = responseToDelete;
+            setResponseToDelete(null);
+            await executeDeleteWsOwnerResponse(id);
+          }}
+          onCancel={() => setResponseToDelete(null)}
+        />
 
         {/* Historical Flood Data Modal */}
         {historyModalOpen && (
@@ -6000,271 +6056,423 @@ export default function LiveMap({ activeMissions = [], height = 620, hideWrapper
       {previewReviewModal && (() => {
         const activeImages = previewReviewModal.images || previewReviewModal.review?.images || [];
         return (
-        <div
-          onClick={() => setPreviewReviewModal(null)}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 99999,
-            background: 'rgba(5, 10, 18, 0.98)',
-            backdropFilter: 'blur(16px)',
-            display: 'flex',
-            boxSizing: 'border-box',
-            overflow: 'hidden',
-            animation: 'fadeIn 0.15s ease-out'
-          }}
-        >
-          {/* Left Sidebar - Comment & Details */}
           <div
-            onClick={e => e.stopPropagation()}
+            onClick={() => setPreviewReviewModal(null)}
             style={{
-              width: 320,
-              minWidth: 320,
-              maxWidth: '36%',
-              flexShrink: 0,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
               height: '100%',
-              background: '#111827',
-              borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+              zIndex: 99999,
+              background: 'rgba(5, 10, 18, 0.98)',
+              backdropFilter: 'blur(16px)',
               display: 'flex',
-              flexDirection: 'column',
-              zIndex: 10,
               boxSizing: 'border-box',
-              boxShadow: '8px 0 25px rgba(0,0,0,0.65)',
-              overflowY: 'auto'
+              overflow: 'hidden',
+              animation: 'fadeIn 0.15s ease-out'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MapPin size={16} color="var(--cyan-400)" />
-                <span>{previewReviewModal.workshopName || 'Workshop Details'}</span>
-              </div>
-            </div>
-
-            <div style={{ padding: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                {previewReviewModal.review?.user?.avatar_url ? (
-                  <img src={previewReviewModal.review.user.avatar_url} alt="Avatar" style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--cyan-400)' }} />
-                ) : (
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan-500), var(--blue-600))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>
-                    {(previewReviewModal.review?.user?.full_name || 'U').charAt(0)}
-                  </div>
-                )}
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
-                    {previewReviewModal.review?.user?.full_name || 'Customer Review'}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    <StarRating value={previewReviewModal.review?.rating || previewReviewModal.review?.stars || 5} readonly size={13} />
-                  </div>
+            {/* Left Sidebar - Comment & Details */}
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: 320,
+                minWidth: 320,
+                maxWidth: '36%',
+                flexShrink: 0,
+                height: '100%',
+                background: '#111827',
+                borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 10,
+                boxSizing: 'border-box',
+                boxShadow: '8px 0 25px rgba(0,0,0,0.65)',
+                overflowY: 'auto'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MapPin size={16} color="var(--cyan-400)" />
+                  <span>{previewReviewModal.workshopName || 'Workshop Details'}</span>
                 </div>
               </div>
-              <div style={{ fontSize: '0.73rem', color: '#9ca3af' }}>
-                Posted on {previewReviewModal.review?.time || previewReviewModal.review?.created_at || 'Recently'}
-              </div>
-            </div>
 
-            <div style={{ padding: '20px', flex: 1, fontSize: '0.88rem', color: '#e5e7eb', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-              {previewReviewModal.review?.content || previewReviewModal.review?.text || (
-                <span style={{ fontStyle: 'italic', color: '#6b7280' }}>No text comment provided with this photo.</span>
+              <div style={{ padding: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  {previewReviewModal.review?.user?.avatar_url ? (
+                    <img src={previewReviewModal.review.user.avatar_url} alt="Avatar" style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--cyan-400)' }} />
+                  ) : (
+                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan-500), var(--blue-600))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>
+                      {(previewReviewModal.review?.user?.full_name || 'U').charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
+                      {previewReviewModal.review?.user?.full_name || 'Customer Review'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <StarRating value={previewReviewModal.review?.rating || previewReviewModal.review?.stars || 5} readonly size={13} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.73rem', color: '#9ca3af' }}>
+                  Posted on {previewReviewModal.review?.time || previewReviewModal.review?.created_at || 'Recently'}
+                </div>
+              </div>
+
+              <div style={{ padding: '20px', flex: 1, fontSize: '0.88rem', color: '#e5e7eb', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {previewReviewModal.review?.content || previewReviewModal.review?.text || (
+                  <span style={{ fontStyle: 'italic', color: '#6b7280' }}>No text comment provided with this photo.</span>
+                )}
+              </div>
+
+              {activeImages && activeImages.length > 1 && (
+                <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', background: '#0b0f19' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#9ca3af', marginBottom: 8 }}>
+                    Photos inside this review ({activeImages.length})
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                    {activeImages.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt="Thumbnail"
+                        onClick={() => setPreviewReviewModal(prev => ({ ...prev, imageIndex: idx }))}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 6,
+                          objectFit: 'cover',
+                          cursor: 'pointer',
+                          border: previewReviewModal.imageIndex === idx ? '2px solid var(--cyan-400)' : '1px solid rgba(255,255,255,0.2)',
+                          opacity: previewReviewModal.imageIndex === idx ? 1 : 0.6,
+                          transition: 'all 0.2s'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
-            {activeImages && activeImages.length > 1 && (
-              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', background: '#0b0f19' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#9ca3af', marginBottom: 8 }}>
-                  Photos inside this review ({activeImages.length})
-                </div>
-                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-                  {activeImages.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt="Thumbnail"
-                      onClick={() => setPreviewReviewModal(prev => ({ ...prev, imageIndex: idx }))}
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 6,
-                        objectFit: 'cover',
-                        cursor: 'pointer',
-                        border: previewReviewModal.imageIndex === idx ? '2px solid var(--cyan-400)' : '1px solid rgba(255,255,255,0.2)',
-                        opacity: previewReviewModal.imageIndex === idx ? 1 : 0.6,
-                        transition: 'all 0.2s'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Main Area - Large Photo Viewer */}
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              height: '100%',
-              background: '#04070c',
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxSizing: 'border-box',
-              padding: '24px 64px',
-              overflow: 'hidden'
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewReviewModal(null)}
+            {/* Right Main Area - Large Photo Viewer */}
+            <div
+              onClick={e => e.stopPropagation()}
               style={{
-                position: 'absolute',
-                top: 20,
-                right: 20,
-                background: 'rgba(18, 28, 45, 0.85)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(6, 182, 212, 0.4)',
-                borderRadius: 24,
-                padding: '8px 16px',
+                flex: 1,
+                minWidth: 0,
+                height: '100%',
+                background: '#04070c',
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
-                color: '#fff',
-                cursor: 'pointer',
-                zIndex: 50,
-                boxShadow: '0 8px 30px rgba(0,0,0,0.7), 0 0 15px rgba(6, 182, 212, 0.25)',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                justifyContent: 'center',
+                boxSizing: 'border-box',
+                padding: '24px 64px',
+                overflow: 'hidden'
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.25)';
-                e.currentTarget.style.borderColor = 'var(--cyan-400)';
-                e.currentTarget.style.transform = 'scale(1.04)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)';
-                e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-              title="Close Photo Viewer"
             >
-              <X size={18} color="var(--cyan-400)" strokeWidth={2.8} />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.3px', color: '#fff' }}>CLOSE</span>
-            </button>
-
-            {activeImages && activeImages.length > 1 && (
-              <div style={{ position: 'absolute', top: 22, left: 22, background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.2)', padding: '5px 13px', borderRadius: 20, color: '#fff', fontSize: '0.8rem', fontWeight: 700, zIndex: 40 }}>
-                {(previewReviewModal.imageIndex || 0) + 1} / {activeImages.length}
-              </div>
-            )}
-
-            {activeImages && activeImages.length > 1 && (
               <button
                 type="button"
-                onClick={() => {
-                  const total = activeImages.length;
-                  const nextIdx = (previewReviewModal.imageIndex - 1 + total) % total;
-                  setPreviewReviewModal(prev => ({ ...prev, imageIndex: nextIdx }));
-                }}
+                onClick={() => setPreviewReviewModal(null)}
                 style={{
                   position: 'absolute',
-                  left: 18,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
+                  top: 20,
+                  right: 20,
                   background: 'rgba(18, 28, 45, 0.85)',
-                  backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '50%',
-                  width: 48,
-                  height: 48,
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(6, 182, 212, 0.4)',
+                  borderRadius: 24,
+                  padding: '8px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: 6,
                   color: '#fff',
                   cursor: 'pointer',
-                  zIndex: 40,
-                  boxShadow: '0 6px 20px rgba(0,0,0,0.7)',
-                  transition: 'all 0.2s'
+                  zIndex: 50,
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.7), 0 0 15px rgba(6, 182, 212, 0.25)',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan-400)'; e.currentTarget.style.background = 'rgba(6,182,212,0.2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)'; }}
-                title="Previous Photo"
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(6, 182, 212, 0.25)';
+                  e.currentTarget.style.borderColor = 'var(--cyan-400)';
+                  e.currentTarget.style.transform = 'scale(1.04)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)';
+                  e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                title="Close Photo Viewer"
               >
-                <ChevronLeft size={26} color="#fff" strokeWidth={2.6} />
+                <X size={18} color="var(--cyan-400)" strokeWidth={2.8} />
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.3px', color: '#fff' }}>CLOSE</span>
               </button>
-            )}
 
-            <img
-              src={activeImages ? activeImages[previewReviewModal.imageIndex || 0] : ''}
-              alt="Review full size HD"
-              style={{
-                maxHeight: '100%',
-                maxWidth: '100%',
-                objectFit: 'contain',
-                borderRadius: 8,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.95)'
-              }}
-            />
+              {activeImages && activeImages.length > 1 && (
+                <div style={{ position: 'absolute', top: 22, left: 22, background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.2)', padding: '5px 13px', borderRadius: 20, color: '#fff', fontSize: '0.8rem', fontWeight: 700, zIndex: 40 }}>
+                  {(previewReviewModal.imageIndex || 0) + 1} / {activeImages.length}
+                </div>
+              )}
 
-            {activeImages && activeImages.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const total = activeImages.length;
-                  const nextIdx = (previewReviewModal.imageIndex + 1) % total;
-                  setPreviewReviewModal(prev => ({ ...prev, imageIndex: nextIdx }));
-                }}
+              {activeImages && activeImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const total = activeImages.length;
+                    const nextIdx = (previewReviewModal.imageIndex - 1 + total) % total;
+                    setPreviewReviewModal(prev => ({ ...prev, imageIndex: nextIdx }));
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: 18,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(18, 28, 45, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '50%',
+                    width: 48,
+                    height: 48,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    zIndex: 40,
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.7)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan-400)'; e.currentTarget.style.background = 'rgba(6,182,212,0.2)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)'; }}
+                  title="Previous Photo"
+                >
+                  <ChevronLeft size={26} color="#fff" strokeWidth={2.6} />
+                </button>
+              )}
+
+              <img
+                src={activeImages ? activeImages[previewReviewModal.imageIndex || 0] : ''}
+                alt="Review full size HD"
                 style={{
-                  position: 'absolute',
-                  right: 18,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'rgba(18, 28, 45, 0.85)',
-                  backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '50%',
-                  width: 48,
-                  height: 48,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  zIndex: 40,
-                  boxShadow: '0 6px 20px rgba(0,0,0,0.7)',
-                  transition: 'all 0.2s'
+                  maxHeight: '100%',
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  borderRadius: 8,
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.95)'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan-400)'; e.currentTarget.style.background = 'rgba(6,182,212,0.2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)'; }}
-                title="Next Photo"
-              >
-                <ChevronRight size={26} color="#fff" strokeWidth={2.6} />
-              </button>
-            )}
+              />
+
+              {activeImages && activeImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const total = activeImages.length;
+                    const nextIdx = (previewReviewModal.imageIndex + 1) % total;
+                    setPreviewReviewModal(prev => ({ ...prev, imageIndex: nextIdx }));
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: 18,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(18, 28, 45, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '50%',
+                    width: 48,
+                    height: 48,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    zIndex: 40,
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.7)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan-400)'; e.currentTarget.style.background = 'rgba(6,182,212,0.2)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.background = 'rgba(18, 28, 45, 0.85)'; }}
+                  title="Next Photo"
+                >
+                  <ChevronRight size={26} color="#fff" strokeWidth={2.6} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
         );
       })()}
+
+      {/* Sensor Weekly Forecast Modal */}
+      {showForecastModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100001,
+          padding: 20,
+          backdropFilter: 'blur(4px)'
+        }} onClick={() => setShowForecastModal(false)}>
+          <div 
+            style={{ 
+              width: '100%', 
+              maxWidth: 550, 
+              background: 'var(--bg-elevated)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <CloudRain size={20} color="var(--cyan-400)" />
+                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  7-Day Weather Forecast
+                </span>
+              </div>
+              <button 
+                onClick={() => setShowForecastModal(false)} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 5 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '400px', overflowY: 'auto', paddingRight: 4 }}>
+              {forecastLoading ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 0' }}>
+                  Loading forecast data...
+                </div>
+              ) : sensorForecast && sensorForecast.length > 0 ? (
+                sensorForecast.map((item, idx) => {
+                  const isExpanded = expandedDay === item.day;
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => setExpandedDay(isExpanded ? null : item.day)}
+                      style={{ 
+                        background: item.hasRain ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255, 255, 255, 0.02)', 
+                        borderRadius: '12px', 
+                        border: item.hasRain ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid var(--border-dim)', 
+                        padding: '12px 16px', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = item.hasRain ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = item.hasRain ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255,255,255,0.02)'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.day}</div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'capitalize', marginTop: 2 }}>{item.description}</div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          {item.hasRain && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              fontWeight: 700, 
+                              color: '#fca5a5', 
+                              background: 'rgba(239, 68, 68, 0.2)', 
+                              padding: '3px 8px', 
+                              borderRadius: '4px' 
+                            }}>
+                              RAIN FORECASTED
+                            </span>
+                          )}
+                          
+                          <img src={`http://openweathermap.org/img/wn/${item.icon}@2x.png`} alt="icon" style={{ width: 44, height: 44 }} />
+                          
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', width: '50px', textAlign: 'right' }}>
+                            {item.temp}°C
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && item.hours && item.hours.length > 0 && (
+                        <div style={{ 
+                          marginTop: 12, 
+                          paddingTop: 12, 
+                          borderTop: '1px solid rgba(255,255,255,0.08)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                          width: '100%'
+                        }} onClick={e => e.stopPropagation()}>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>3-Hour Detailed Forecast:</div>
+                          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, width: '100%' }}>
+                            {item.hours.map((h, hIdx) => (
+                              <div 
+                                key={hIdx} 
+                                style={{ 
+                                  background: h.hasRain ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.03)', 
+                                  border: h.hasRain ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255,255,255,0.05)',
+                                  padding: '8px 10px',
+                                  borderRadius: '8px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  minWidth: '70px',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>{h.time}</span>
+                                <img src={`http://openweathermap.org/img/wn/${h.icon}.png`} alt="h-icon" style={{ width: 30, height: 30, margin: '2px 0' }} />
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>{h.temp}°C</span>
+                                {h.hasRain && (
+                                  <span style={{ fontSize: '0.6rem', color: '#fca5a5', fontWeight: 600, marginTop: 2 }}>
+                                    Rain
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px 0' }}>
+                  No forecast data available.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 
   if (systemConfig && systemConfig.module_map === false) {
     return (
-      <div 
+      <div
         ref={wrapperRef}
-        className={hideWrapper ? "" : "card"} 
-        style={{ 
-          height: height || 620, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          background: 'rgba(30,41,59,0.5)', 
+        className={hideWrapper ? "" : "card"}
+        style={{
+          height: height || 620,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(30,41,59,0.5)',
           border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-md)',
           color: 'var(--text-secondary)',

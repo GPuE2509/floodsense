@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, MessageSquare, Wrench, Phone, Clock, CheckCircle, ThumbsUp, Search, Navigation, Bookmark, Share2, Loader, Trash2 } from 'lucide-react';
+import { Modal } from 'antd';
+import { MapPin, Star, MessageSquare, Wrench, Phone, Clock, CheckCircle, ThumbsUp, Search, Navigation, Bookmark, Share2, Loader, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -176,6 +178,18 @@ export default function UserWorkshops({ onNavigate }) {
   const [reviewsList, setReviewsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const [currentPageServices, setCurrentPageServices] = useState(1);
+  const itemsPerPageServices = 5;
+  const [pageInputServices, setPageInputServices] = useState('1');
+
+  useEffect(() => {
+    setPageInputServices(currentPageServices.toString());
+  }, [currentPageServices]);
+
+  useEffect(() => {
+    setCurrentPageServices(1);
+  }, [selectedWs]);
   const [loadingWsDetail, setLoadingWsDetail] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -186,6 +200,8 @@ export default function UserWorkshops({ onNavigate }) {
   const [likedReviews, setLikedReviews] = useState({});
   const [searchWs, setSearchWs] = useState('');
   const [filterFlood, setFilterFlood] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load user profile
   useEffect(() => {
@@ -204,6 +220,18 @@ export default function UserWorkshops({ onNavigate }) {
     };
     loadProfile();
   }, []);
+
+  // Correct selectedWs if it is the owner's workshop
+  useEffect(() => {
+    if (selectedWs && currentUser && (selectedWs.owner_id === currentUser._id || selectedWs.isOwner || selectedWs.is_owner)) {
+      const displayList = workshops.filter(w => !(currentUser && w.owner_id === currentUser._id) && !(w.isOwner || w.is_owner));
+      if (displayList.length > 0) {
+        setSelectedWs(displayList[0]);
+      } else {
+        setSelectedWs(null);
+      }
+    }
+  }, [currentUser, workshops, selectedWs]);
 
   // Initialize data and location
   useEffect(() => {
@@ -341,9 +369,13 @@ export default function UserWorkshops({ onNavigate }) {
     }
   };
 
-  const deleteReview = async (wsId, reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review/comment?')) return;
+  const deleteReview = (wsId, reviewId) => {
+    setReviewToDelete({ wsId, reviewId });
+  };
+
+  const executeDeleteReview = async (wsId, reviewId) => {
     try {
+      setIsSaving(true);
       const res = await apiService.delete(`/workshops/${wsId}/reviews/${reviewId}`);
       if (res && (res.success || res.status === 200 || res.message)) {
         setReviewsList(prev => prev.filter(r => r._id !== reviewId && r.id !== reviewId));
@@ -354,6 +386,8 @@ export default function UserWorkshops({ onNavigate }) {
     } catch (err) {
       console.error('Error deleting review:', err);
       alert(err.message || 'Could not delete review.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -361,11 +395,13 @@ export default function UserWorkshops({ onNavigate }) {
     setLikedReviews(prev => ({ ...prev, [reviewId]: !prev[reviewId] }));
   };
 
-  const filteredWs = workshops.filter(ws => {
-    const matchSearch = ws.name.toLowerCase().includes(searchWs.toLowerCase()) || ws.address.toLowerCase().includes(searchWs.toLowerCase());
-    const matchFlood = !filterFlood || ws.is_mobile; // matches support / mobile repairs
-    return matchSearch && matchFlood;
-  });
+  const filteredWs = workshops
+    .filter(ws => !(currentUser && ws.owner_id === currentUser._id) && !(ws.isOwner || ws.is_owner))
+    .filter(ws => {
+      const matchSearch = ws.name.toLowerCase().includes(searchWs.toLowerCase()) || ws.address.toLowerCase().includes(searchWs.toLowerCase());
+      const matchFlood = !filterFlood || ws.is_mobile; // matches support / mobile repairs
+      return matchSearch && matchFlood;
+    });
 
   if (loading && workshops.length === 0) {
     return (
@@ -594,7 +630,6 @@ export default function UserWorkshops({ onNavigate }) {
                 </div>
               </div>
 
-              {/* Detail list rows */}
               <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   <MapPin size={15} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
@@ -618,19 +653,65 @@ export default function UserWorkshops({ onNavigate }) {
                 {(!selectedWs.services || selectedWs.services.length === 0) ? (
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0' }}>No service pricing has been registered for this workshop.</div>
                 ) : (
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    {selectedWs.services.map((s, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', borderBottom: i < selectedWs.services.length - 1 ? '1px dashed var(--border-dim)' : 'none', paddingBottom: i < selectedWs.services.length - 1 ? 6 : 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)' }}>
-                          <Wrench size={11} color="var(--cyan-400)" />
-                          <span>{s.service_name}</span>
-                        </div>
-                        <div style={{ fontWeight: 700, color: 'var(--cyan-400)' }}>
-                          {s.base_price ? `${s.base_price.toLocaleString('vi-VN')} VND` : 'Contact'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    {(() => {
+                      const totalPagesServices = Math.ceil(selectedWs.services.length / itemsPerPageServices);
+                      const paginatedServices = selectedWs.services.slice((currentPageServices - 1) * itemsPerPageServices, currentPageServices * itemsPerPageServices);
+                      return (
+                        <>
+                          <div style={{ display: 'grid', gap: 8 }}>
+                            {paginatedServices.map((s, i) => (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', borderBottom: i < paginatedServices.length - 1 ? '1px dashed var(--border-dim)' : 'none', paddingBottom: i < paginatedServices.length - 1 ? 6 : 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)' }}>
+                                  <Wrench size={11} color="var(--cyan-400)" />
+                                  <span>{s.service_name}</span>
+                                </div>
+                                <div style={{ fontWeight: 700, color: 'var(--cyan-400)', marginLeft: 'auto' }}>
+                                  {s.base_price ? `${s.base_price.toLocaleString('vi-VN')} VND` : 'Contact'}
+                                  {s.base_price && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}> / {s.unit || 'turn'}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {selectedWs.services.length > 0 && (
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 0 0 0',
+                              borderTop: '1px solid var(--border-subtle)',
+                              marginTop: 12
+                            }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                Showing <strong style={{ color: 'var(--text-primary)' }}>{selectedWs.services.length === 0 ? 0 : (currentPageServices - 1) * itemsPerPageServices + 1}-{Math.min(currentPageServices * itemsPerPageServices, selectedWs.services.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{selectedWs.services.length}</strong> services
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => setCurrentPageServices(p => Math.max(1, p - 1))}
+                                  disabled={currentPageServices === 1}
+                                  style={{ opacity: currentPageServices === 1 ? 0.5 : 1, padding: '2px 6px', fontSize: '0.72rem' }}
+                                >
+                                  Prev
+                                </button>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                  {currentPageServices} / {totalPagesServices}
+                                </span>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => setCurrentPageServices(p => Math.min(totalPagesServices, p + 1))}
+                                  disabled={currentPageServices === totalPagesServices}
+                                  style={{ opacity: currentPageServices === totalPagesServices ? 0.5 : 1, padding: '2px 6px', fontSize: '0.72rem' }}
+                                >
+                                  Next
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
             </div>
@@ -749,6 +830,18 @@ export default function UserWorkshops({ onNavigate }) {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={!!reviewToDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this review/comment? This action cannot be undone."
+        loading={isSaving}
+        onConfirm={async () => {
+          const { wsId, reviewId } = reviewToDelete;
+          await executeDeleteReview(wsId, reviewId);
+          setReviewToDelete(null);
+        }}
+        onCancel={() => setReviewToDelete(null)}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const TruncatedText = ({ text }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -582,7 +583,7 @@ export default function ForumModeration() {
     fetchReportedCommentsRef.current();
 
     // Set up WebSocket for real-time forum updates with auto-reconnect
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
     let ws;
     let reconnectTimeout;
 
@@ -1317,61 +1318,37 @@ export default function ForumModeration() {
         </div>
       )}
       
-      {/* Custom Confirmation Modal */}
-      {confirmModal.open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="card p-6" style={{ maxWidth: 400, width: '90%', border: '1px solid rgba(239,29,55,0.3)', background: 'var(--bg-elevated)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(239,29,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red-400)' }}>
-                {confirmModal.type.startsWith('delete') ? <Trash2 size={20} /> : confirmModal.type === 'reject' ? <X size={20} /> : <ShieldCheck size={20} />}
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                {confirmModal.type.startsWith('delete') ? 'Delete Content' : confirmModal.type === 'reject' ? 'Reject Post' : 'Dismiss Reports'}
-              </h3>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 24 }}>
-              {confirmModal.type.startsWith('delete') 
-                ? (confirmModal.type === 'delete-official' 
-                    ? 'Are you sure you want to delete this official pinned post? This action cannot be undone.' 
-                    : 'Are you sure you want to delete this violating content? This action cannot be undone.')
-                : confirmModal.type === 'reject'
-                    ? 'Are you sure you want to reject this post? The author will be notified.'
-                    : 'Are you sure you want to dismiss all reports for this content?'}
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setConfirmModal({ open: false, type: '', id: null })}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => {
-                  if (confirmModal.type === 'delete') {
-                    deleteViolatingPost(confirmModal.id);
-                  } else if (confirmModal.type === 'delete-official') {
-                    deleteNormalPost(confirmModal.id);
-                  } else if (confirmModal.type === 'dismiss') {
-                    dismissReports(confirmModal.id);
-                  } else if (confirmModal.type === 'delete-comment') {
-                    deleteViolatingComment(confirmModal.id);
-                  } else if (confirmModal.type === 'dismiss-comment') {
-                    dismissCommentReports(confirmModal.id);
-                  } else if (confirmModal.type === 'reject') {
-                    rejectPost(confirmModal.id);
-                  }
-                  setConfirmModal({ open: false, type: '', id: null });
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title={confirmModal.type.startsWith('delete') ? 'Delete Content' : confirmModal.type === 'reject' ? 'Reject Post' : 'Dismiss Reports'}
+        message={confirmModal.type.startsWith('delete') 
+          ? (confirmModal.type === 'delete-official' 
+              ? 'Are you sure you want to delete this official pinned post? This action cannot be undone.' 
+              : 'Are you sure you want to delete this violating content? This action cannot be undone.')
+          : confirmModal.type === 'reject'
+              ? 'Are you sure you want to reject this post? The author will be notified.'
+              : 'Are you sure you want to dismiss all reports for this content?'}
+        confirmText="Confirm"
+        loading={confirmModal.loading}
+        onConfirm={async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          if (confirmModal.type === 'delete') {
+            await deleteViolatingPost(confirmModal.id);
+          } else if (confirmModal.type === 'delete-official') {
+            await deleteNormalPost(confirmModal.id);
+          } else if (confirmModal.type === 'dismiss') {
+            await dismissReports(confirmModal.id);
+          } else if (confirmModal.type === 'delete-comment') {
+            await deleteViolatingComment(confirmModal.id);
+          } else if (confirmModal.type === 'dismiss-comment') {
+            await dismissCommentReports(confirmModal.id);
+          } else if (confirmModal.type === 'reject') {
+            await rejectPost(confirmModal.id);
+          }
+          setConfirmModal({ open: false, type: '', id: null, loading: false });
+        }}
+        onCancel={() => setConfirmModal({ open: false, type: '', id: null })}
+      />
 
       {/* Image Lightbox */}
       {lightboxImage && (

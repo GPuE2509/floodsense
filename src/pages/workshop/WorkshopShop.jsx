@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Wrench, Save, CheckCircle, AlertTriangle, MapPin,
   Phone, Clock, Edit3, Plus, Trash2, ToggleLeft, ToggleRight,
-  PauseCircle, XCircle, Camera, X
+  PauseCircle, XCircle, Camera, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import ConfirmModal from '../../components/common/ConfirmModal';
+
+const UNIT_SUGGESTIONS = ["job", "service", "item", "piece", "liter", "km", "hour", "set"];
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import GoongMaplibreLayer from '../../components/common/GoongMaplibreLayer';
@@ -296,20 +299,28 @@ export default function WorkshopShop() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+
+  const [currentPageServices, setCurrentPageServices] = useState(1);
+  const itemsPerPageServices = 5;
+  const [pageInputServices, setPageInputServices] = useState('1');
+
+  useEffect(() => {
+    setPageInputServices(currentPageServices.toString());
+  }, [currentPageServices]);
   const [showSuspend, setShowSuspend] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [showLargeMap, setShowLargeMap] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState('success');
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [activeClock, setActiveClock] = useState(null); // { value, onSave }
+  const [isSavingService, setIsSavingService] = useState(false);
 
   const showToast = (message, type = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3000);
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: message,
+        type: type
+      }
+    }));
   };
 
   const fetchShopData = async () => {
@@ -544,6 +555,9 @@ export default function WorkshopShop() {
       return;
     }
 
+    if (isSavingService) return;
+    setIsSavingService(true);
+
     try {
       const res = await apiService.post('/workshops/me/services', newService);
       if (res && res.workshop) {
@@ -559,6 +573,8 @@ export default function WorkshopShop() {
     } catch (err) {
       console.error('Failed to add service:', err);
       showToast(err.response?.data?.message || "Failed to add service.", 'error');
+    } finally {
+      setIsSavingService(false);
     }
   };
 
@@ -594,6 +610,9 @@ export default function WorkshopShop() {
       return;
     }
 
+    if (isSavingService) return;
+    setIsSavingService(true);
+
     try {
       const res = await apiService.put(`/workshops/me/services/${editingServiceId}`, editingServiceData);
       if (res && res.workshop) {
@@ -611,6 +630,8 @@ export default function WorkshopShop() {
       } else {
         showToast("Failed to update service.", 'error');
       }
+    } finally {
+      setIsSavingService(false);
     }
   };
 
@@ -619,6 +640,7 @@ export default function WorkshopShop() {
   const confirmDeleteService = async () => {
     if (!deleteConfirmId) return;
     try {
+      setIsSavingService(true);
       const res = await apiService.delete(`/workshops/me/services/${deleteConfirmId}`);
       if (res && res.success) {
         showToast("Service deleted successfully.");
@@ -631,6 +653,7 @@ export default function WorkshopShop() {
       console.error('Failed to delete service:', err);
       showToast(err.response?.data?.message || "Failed to delete service.", 'error');
     } finally {
+      setIsSavingService(false);
       setDeleteConfirmId(null);
     }
   };
@@ -912,7 +935,7 @@ export default function WorkshopShop() {
           {addingService && (
             <div className="card p-5" style={{ marginBottom: 16, border: '1px solid rgba(217,119,6,0.3)' }}>
               <div className="section-title" style={{ marginBottom: 12 }}>Add new service</div>
-              <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
+              <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
                 <div>
                   <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Service name</label>
                   <input className="input" maxLength={100} value={newService.name} onChange={e => { setNewService(p => ({ ...p, name: e.target.value })); setNewServiceErrors(p => ({ ...p, name: '' })); }} placeholder="Example: Dry the flooded car" style={{ borderColor: newServiceErrors.name ? 'var(--red-400)' : undefined }} />
@@ -923,71 +946,184 @@ export default function WorkshopShop() {
                   <input className="input" maxLength={15} value={newService.price} onChange={e => { setNewService(p => ({ ...p, price: e.target.value.replace(/\D/g, '') })); setNewServiceErrors(p => ({ ...p, price: '' })); }} placeholder="VD: 1000" style={{ borderColor: newServiceErrors.price ? 'var(--red-400)' : undefined }} />
                   {newServiceErrors.price && <div style={{ fontSize: '0.7rem', color: 'var(--red-400)', marginTop: 4 }}>{newServiceErrors.price}</div>}
                 </div>
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Unit</label>
+                  <input className="input" maxLength={30} value={newService.unit} onChange={e => setNewService(p => ({ ...p, unit: e.target.value }))} placeholder="e.g. turn, piece..." />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                    {UNIT_SUGGESTIONS.filter(u => u.toLowerCase().includes((newService.unit || '').toLowerCase())).map(u => (
+                      <button 
+                        key={u} 
+                        type="button"
+                        className="badge" 
+                        style={{ cursor: 'pointer', background: newService.unit === u ? 'var(--cyan-400)' : 'rgba(255,255,255,0.05)', color: newService.unit === u ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-dim)', fontSize: '0.6rem', padding: '2px 5px' }}
+                        onClick={() => setNewService(p => ({ ...p, unit: u }))}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <textarea className="input" maxLength={300} rows={2} placeholder="Service description..." value={newService.desc} onChange={e => setNewService(p => ({ ...p, desc: e.target.value }))} style={{ marginBottom: 10 }} />
               <div className="flex gap-3">
-                <button className="btn btn-success btn-sm" onClick={addService}><CheckCircle size={13} /> Add</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => { setAddingService(false); setNewServiceErrors({}); }}>Cancel</button>
+                <button className="btn btn-success btn-sm" onClick={addService} disabled={isSavingService}>
+                  <CheckCircle size={13} /> {isSavingService ? "Adding..." : "Add"}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setAddingService(false); setNewServiceErrors({}); }} disabled={isSavingService}>Cancel</button>
               </div>
             </div>
           )}
 
           <div style={{ display: 'grid', gap: 12 }}>
-            {shop.services.map(s => (
-              editingServiceId === (s.id || s._id) ? (
-                <div key={s.id || s._id} className="card p-5" style={{ border: '1px solid var(--border-dim)' }}>
-                  <div className="section-title" style={{ marginBottom: 12 }}>Edit service</div>
-                  <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Service name</label>
-                      <input className="input" maxLength={100} value={editingServiceData.name} onChange={e => { setEditingServiceData(p => ({ ...p, name: e.target.value })); setEditingServiceErrors(p => ({ ...p, name: '' })); }} placeholder="Example: Dry the flooded car" style={{ borderColor: editingServiceErrors.name ? 'var(--red-400)' : undefined }} />
-                      {editingServiceErrors.name && <div style={{ fontSize: '0.7rem', color: 'var(--red-400)', marginTop: 4 }}>{editingServiceErrors.name}</div>}
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Price (VND)</label>
-                      <input className="input" maxLength={15} value={editingServiceData.price} onChange={e => { setEditingServiceData(p => ({ ...p, price: e.target.value.replace(/\D/g, '') })); setEditingServiceErrors(p => ({ ...p, price: '' })); }} placeholder="VD: 1000" style={{ borderColor: editingServiceErrors.price ? 'var(--red-400)' : undefined }} />
-                      {editingServiceErrors.price && <div style={{ fontSize: '0.7rem', color: 'var(--red-400)', marginTop: 4 }}>{editingServiceErrors.price}</div>}
-                    </div>
-                  </div>
-                  <textarea className="input" maxLength={300} rows={2} placeholder="Service description..." value={editingServiceData.desc} onChange={e => setEditingServiceData(p => ({ ...p, desc: e.target.value }))} style={{ marginBottom: 10 }} />
-                  <div className="flex gap-3">
-                    <button className="btn btn-success btn-sm" onClick={saveEditedService}><CheckCircle size={13} /> Save</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setEditingServiceId(null)}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={s.id || s._id} className="card" style={{
-                  padding: '14px 18px',
-                  borderLeft: s.active ? '3px solid #f59e0b' : '3px solid var(--border-dim)',
-                  opacity: s.active ? 1 : 0.55,
-                }}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {!s.active && (
-                        <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 4 }}>
-                          <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(71,85,105,0.2)', color: 'var(--text-muted)', border: 'none' }}>TURN OFF</span>
+            {(() => {
+              const totalPagesServices = Math.ceil(shop.services.length / itemsPerPageServices);
+              const paginatedServices = shop.services.slice((currentPageServices - 1) * itemsPerPageServices, currentPageServices * itemsPerPageServices);
+              return (
+                <>
+                  {paginatedServices.map(s => (
+                    editingServiceId === (s.id || s._id) ? (
+                      <div key={s.id || s._id} className="card p-5" style={{ border: '1px solid var(--border-dim)' }}>
+                        <div className="section-title" style={{ marginBottom: 12 }}>Edit service</div>
+                        <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Service name</label>
+                            <input className="input" maxLength={100} value={editingServiceData.name} onChange={e => { setEditingServiceData(p => ({ ...p, name: e.target.value })); setEditingServiceErrors(p => ({ ...p, name: '' })); }} placeholder="Example: Dry the flooded car" style={{ borderColor: editingServiceErrors.name ? 'var(--red-400)' : undefined }} />
+                            {editingServiceErrors.name && <div style={{ fontSize: '0.7rem', color: 'var(--red-400)', marginTop: 4 }}>{editingServiceErrors.name}</div>}
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Price (VND)</label>
+                            <input className="input" maxLength={15} value={editingServiceData.price} onChange={e => { setEditingServiceData(p => ({ ...p, price: e.target.value.replace(/\D/g, '') })); setEditingServiceErrors(p => ({ ...p, price: '' })); }} placeholder="VD: 1000" style={{ borderColor: editingServiceErrors.price ? 'var(--red-400)' : undefined }} />
+                            {editingServiceErrors.price && <div style={{ fontSize: '0.7rem', color: 'var(--red-400)', marginTop: 4 }}>{editingServiceErrors.price}</div>}
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Unit</label>
+                            <input className="input" maxLength={30} value={editingServiceData.unit} onChange={e => setEditingServiceData(p => ({ ...p, unit: e.target.value }))} placeholder="e.g. turn, piece..." />
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                              {UNIT_SUGGESTIONS.filter(u => u.toLowerCase().includes((editingServiceData.unit || '').toLowerCase())).map(u => (
+                                <button 
+                                  key={u} 
+                                  type="button"
+                                  className="badge" 
+                                  style={{ cursor: 'pointer', background: editingServiceData.unit === u ? 'var(--cyan-400)' : 'rgba(255,255,255,0.05)', color: editingServiceData.unit === u ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-dim)', fontSize: '0.6rem', padding: '2px 5px' }}
+                                  onClick={() => setEditingServiceData(p => ({ ...p, unit: u }))}
+                                >
+                                  {u}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)', marginBottom: 3, wordBreak: 'break-word' }}>{s.service_name || s.name}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 4, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{s.desc}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f59e0b', fontSize: '0.92rem', wordBreak: 'break-word' }}>
-                        {parseInt((s.base_price?.toString() || s.price?.toString() || '0').replace(/\D/g, '')).toLocaleString('vi-VN')}D / {s.unit || 'turn'}
+                        <textarea className="input" maxLength={300} rows={2} placeholder="Service description..." value={editingServiceData.desc} onChange={e => setEditingServiceData(p => ({ ...p, desc: e.target.value }))} style={{ marginBottom: 10 }} />
+                        <div className="flex gap-3">
+                          <button className="btn btn-success btn-sm" onClick={saveEditedService} disabled={isSavingService}>
+                            <CheckCircle size={13} /> {isSavingService ? "Saving..." : "Save"}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setEditingServiceId(null)} disabled={isSavingService}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={s.id || s._id} className="card" style={{
+                        padding: '14px 18px',
+                        borderLeft: s.active ? '3px solid #f59e0b' : '3px solid var(--border-dim)',
+                        opacity: s.active ? 1 : 0.55,
+                      }}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {!s.active && (
+                              <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 4 }}>
+                                <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(71,85,105,0.2)', color: 'var(--text-muted)', border: 'none' }}>TURN OFF</span>
+                              </div>
+                            )}
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)', marginBottom: 3, wordBreak: 'break-word' }}>{s.service_name || s.name}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 4, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{s.desc}</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f59e0b', fontSize: '0.92rem', wordBreak: 'break-word' }}>
+                              {parseInt((s.base_price?.toString() || s.price?.toString() || '0').replace(/\D/g, '')).toLocaleString('vi-VN')}D / {s.unit || 'turn'}
+                            </div>
+                          </div>
+                          {isOwner && (
+                            <div className="flex items-center gap-2">
+                              <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', color: 'var(--text-primary)' }} onClick={() => startEditService(s)}>
+                                <Edit3 size={13} style={{ marginRight: 4 }} /> Edit
+                              </button>
+                              <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', color: 'var(--red-400)' }} onClick={() => setDeleteConfirmId(s.id || s._id)}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  ))}
+                  {shop.services.length > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px 20px',
+                      borderTop: '1px solid var(--border-subtle)',
+                      background: 'var(--bg-surface)',
+                      borderRadius: 'var(--r-md)',
+                      marginTop: 12
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Showing <strong style={{ color: 'var(--text-primary)' }}>{shop.services.length === 0 ? 0 : (currentPageServices - 1) * itemsPerPageServices + 1}-{Math.min(currentPageServices * itemsPerPageServices, shop.services.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{shop.services.length}</strong> services
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setCurrentPageServices(p => Math.max(1, p - 1))}
+                          disabled={currentPageServices === 1}
+                          style={{ opacity: currentPageServices === 1 ? 0.5 : 1 }}
+                        >
+                          Previous
+                        </button>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          Page 
+                          <input
+                            type="number"
+                            min={1}
+                            max={totalPagesServices}
+                            value={pageInputServices}
+                            onChange={(e) => {
+                              const valStr = e.target.value;
+                              setPageInputServices(valStr);
+                              const val = parseInt(valStr, 10);
+                              if (!isNaN(val) && val >= 1 && val <= totalPagesServices) {
+                                setCurrentPageServices(val);
+                              }
+                            }}
+                            onBlur={() => {
+                              setPageInputServices(currentPageServices.toString());
+                            }}
+                            style={{
+                              width: 44,
+                              padding: '4px 6px',
+                              background: 'var(--bg-elevated)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: 4,
+                              color: 'var(--text-primary)',
+                              textAlign: 'center',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              fontFamily: 'var(--font-mono)'
+                            }}
+                          />
+                          of {totalPagesServices}
+                        </div>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setCurrentPageServices(p => Math.min(totalPagesServices, p + 1))}
+                          disabled={currentPageServices === totalPagesServices}
+                          style={{ opacity: currentPageServices === totalPagesServices ? 0.5 : 1 }}
+                        >
+                          Next
+                        </button>
                       </div>
                     </div>
-                    {isOwner && (
-                      <div className="flex items-center gap-2">
-                        <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', color: 'var(--text-primary)' }} onClick={() => startEditService(s)}>
-                          <Edit3 size={13} style={{ marginRight: 4 }} /> Edit
-                        </button>
-                        <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', color: 'var(--red-400)' }} onClick={() => setDeleteConfirmId(s.id || s._id)}>
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            ))}
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1194,59 +1330,24 @@ export default function WorkshopShop() {
       )}
 
       {/* Modals rendered at the root viewport level */}
-      {showSuspend && (
-        <div className="modal-overlay" onClick={() => setShowSuspend(false)} style={{ zIndex: 10000 }}>
-          <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertTriangle size={18} color="var(--orange-400)" />
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>Temporarily close workshop operations</span>
-              </div>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowSuspend(false)}><X size={16} /></button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                Are you sure you want to temporarily suspend your workshop? The workshop will not accept new applications or appear in search results during the temporary suspension period.
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowSuspend(false)}>Cancel</button>
-              <button
-                className="btn btn-warning btn-sm"
-                style={{ background: 'var(--orange-500)', border: 'none', color: 'white' }}
-                onClick={() => { handleToggleSuspend('pause'); setShowSuspend(false); }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showSuspend}
+        title="Temporarily Close Workshop"
+        message="Are you sure you want to temporarily suspend your workshop? The workshop will not accept new applications or appear in search results during the temporary suspension period."
+        confirmText="Confirm"
+        type="warning"
+        onConfirm={() => { handleToggleSuspend('pause'); setShowSuspend(false); }}
+        onCancel={() => setShowSuspend(false)}
+      />
 
-      {showCancel && (
-        <div className="modal-overlay" onClick={() => setShowCancel(false)} style={{ zIndex: 10000 }}>
-          <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertTriangle size={18} color="var(--red-400)" />
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>Cancel registration of workshop</span>
-              </div>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowCancel(false)}><X size={16} /></button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                Are you sure you want to deregister your workshop and withdraw from being a Workshop Owner? This action will remove the workshop from the system.
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowCancel(false)}>Cancel</button>
-              <button className="btn btn-danger btn-sm" onClick={handleCancelWorkshop}>
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showCancel}
+        title="Cancel Registration"
+        message="Are you sure you want to deregister your workshop and withdraw from being a Workshop Owner? This action will remove the workshop from the system."
+        confirmText="Confirm"
+        onConfirm={handleCancelWorkshop}
+        onCancel={() => setShowCancel(false)}
+      />
 
       {showLargeMap && (
         <div className="modal-overlay" onClick={() => setShowLargeMap(false)} style={{ zIndex: 10000 }}>
@@ -1295,48 +1396,14 @@ export default function WorkshopShop() {
         onSave={activeClock?.onSave}
       />
 
-      {deleteConfirmId && (
-        <div className="modal-overlay" onClick={() => setDeleteConfirmId(null)} style={{ zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', position: 'fixed', inset: 0 }}>
-          <div className="card p-5" style={{ width: 300, background: 'var(--bg-card)', border: '1px solid var(--border-dim)', borderRadius: 'var(--r-lg)', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red-400)', padding: 8, borderRadius: '50%' }}>
-                <Trash2 size={20} />
-              </div>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>Delete Service</div>
-            </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
-              Are you sure you want to delete this service? This action cannot be undone.
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteConfirmId(null)}>Cancel</button>
-              <button className="btn btn-sm" style={{ background: 'var(--red-400)', color: '#fff', border: 'none' }} onClick={confirmDeleteService}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 9999,
-          background: toastType === 'error' ? 'var(--red-400)' : 'var(--green-400)',
-          color: '#fff',
-          padding: '12px 20px',
-          borderRadius: 'var(--r-md)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: '0.85rem',
-          fontWeight: 600
-        }}>
-          {toastType === 'error' ? <XCircle size={18} /> : <CheckCircle size={18} />}
-          {toastMessage}
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="Delete Service"
+        message="Are you sure you want to delete this service? This action cannot be undone."
+        loading={isSavingService}
+        onConfirm={confirmDeleteService}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 }

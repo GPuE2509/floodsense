@@ -56,16 +56,14 @@ export default function DailyClaimPopup() {
     setClaiming(true);
     try {
       const res = await apiService.post('/auth/profile/daily-claim');
-      message.success({
-        content: `+${res.pointsAwarded} points! You are on a ${res.newStreak}-day streak 🔥`,
-        style: {
-          background: '#f8fafc',
-          color: '#0f172a',
-          border: '1px solid #cbd5e1',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontWeight: 500
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: {
+          title: 'Daily Reward Claimed',
+          body: `+${res.pointsAwarded} points! You are on a ${res.newStreak}-day streak 🔥`,
+          isNotification: true,
+          showAction: false
         }
-      });
+      }));
       setVisible(false);
       setProfile(prev => prev ? {
         ...prev,
@@ -74,7 +72,14 @@ export default function DailyClaimPopup() {
         last_daily_claim: new Date().toISOString()
       } : prev);
     } catch (err) {
-      message.error(err.message || 'Failed to claim');
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: {
+          title: 'Claim Failed',
+          body: err.message || 'Failed to claim',
+          isNotification: true,
+          showAction: false
+        }
+      }));
     } finally {
       setClaiming(false);
     }

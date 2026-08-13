@@ -4,29 +4,8 @@ import {
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 import DeviceLifecycleModal from '../../components/common/DeviceLifecycleModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
-function ConfirmModal({ title, message, onConfirm, onCancel, variant = 'danger' }) {
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <AlertTriangle size={18} color={variant === 'danger' ? 'var(--red-400)' : 'var(--orange-400)'} />
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{title}</span>
-          </div>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onCancel}><X size={16} /></button>
-        </div>
-        <div className="modal-body" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-          {message}
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
-          <button className={`btn btn-sm ${variant === 'danger' ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>Confirm</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FloodWarningBadge({ level, warn, danger }) {
   const current = level || 0;
@@ -375,7 +354,9 @@ export default function IotDeviceManagement() {
     const res = await apiService.upload('/iot/devices', formData, {}, 'POST');
     if (res && res.success) {
       await fetchDevices();
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "IoT Device registered successfully!", type: 'success' } }));
     } else {
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: res.message || 'Failed to add device', type: 'error' } }));
       throw new Error(res.message || 'Failed to add device');
     }
   };
@@ -384,7 +365,9 @@ export default function IotDeviceManagement() {
     const res = await apiService.upload('/iot/devices/' + deviceId, formData, {}, 'PUT');
     if (res && res.success) {
       await fetchDevices();
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "IoT Device updated successfully!", type: 'success' } }));
     } else {
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: res.message || 'Failed to update device', type: 'error' } }));
       throw new Error(res.message || 'Failed to update device');
     }
   };
@@ -418,17 +401,22 @@ export default function IotDeviceManagement() {
             `/iot/devices/${device.device_code || device._id}/disable`,
             { is_disabled: willDisable }
           );
-          if (!res?.success) {
+          if (res?.success) {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Device ${willDisable ? 'disabled' : 'enabled'} successfully!`, type: 'success' } }));
+          } else {
             setDeviceList(prevList); // rollback on server error
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: res?.message || 'Operation failed', type: 'error' } }));
           }
         } catch {
           setDeviceList(prevList); // rollback on network error
+          window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Network connection error', type: 'error' } }));
         } finally {
           setTogglingId(null);
         }
       },
       onCancel: () => setConfirmModal(null),
-      variant: willDisable ? 'danger' : 'primary',
+      confirmText: willDisable ? 'Disable' : 'Enable',
+      variant: willDisable ? 'warning' : 'primary',
     });
   };
 
@@ -493,7 +481,7 @@ export default function IotDeviceManagement() {
   }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 10;
   const listTopRef = useRef(null);
 
   const handlePageChange = (newPage) => {
@@ -732,16 +720,20 @@ export default function IotDeviceManagement() {
             </tbody>
           </table>
 
-          {/* Clean Centered Pagination Controls (25 items per page, max 3 pages shown, < and > arrow buttons) */}
+          {/* Clean Centered Pagination Controls (10 items per page, max 3 pages shown, < and > arrow buttons) */}
           {totalPages >= 1 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
               padding: '16px 20px',
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-surface)'
             }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 20 }}>
+                Show {filteredDevices.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredDevices.length)} / {filteredDevices.length} Device
+              </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {/* Previous Arrow < */}
                 <button
@@ -784,7 +776,7 @@ export default function IotDeviceManagement() {
 
       {showAddDeviceModal && <AddDeviceModal onClose={() => setShowAddDeviceModal(false)} onAdd={handleAddNewDevice} />}
       {editingDevice && <EditDeviceModal device={editingDevice} onClose={() => setEditingDevice(null)} onEdit={handleEditDevice} />}
-      {confirmModal && <ConfirmModal {...confirmModal} />}
+      {confirmModal && <ConfirmModal isOpen={!!confirmModal} {...confirmModal} />}
       {lifecycleDevice && <DeviceLifecycleModal device={lifecycleDevice} onClose={() => setLifecycleDevice(null)} />}
     </div>
   );

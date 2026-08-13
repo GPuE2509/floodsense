@@ -249,12 +249,31 @@ export default function VolunteerNotifications() {
     masterPush: true,
     flood: true,
     sos: true,
-    reward: true,
-    team: true,
+    community: true,
     pushChannel: true,
     emailChannel: false,
-    smsChannel: true,
   });
+
+  const fetchPreferences = async () => {
+    try {
+      const res = await apiService.get('/notifications/preferences');
+      if (res && res.success && res.data) {
+        setPreferences(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load preferences from backend:', err);
+    }
+  };
+
+  const handleTogglePreference = async (key, val) => {
+    const updated = { ...preferences, [key]: val };
+    setPreferences(updated);
+    try {
+      await apiService.put('/notifications/preferences', updated);
+    } catch (err) {
+      console.error('Failed to update preference:', err);
+    }
+  };
   const messagesEndRef = useRef(null);
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -305,6 +324,7 @@ export default function VolunteerNotifications() {
       }
     };
     loadProfile();
+    fetchPreferences();
   }, []);
 
   useEffect(() => {
@@ -418,7 +438,7 @@ export default function VolunteerNotifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+    const wsUrl = `ws://localhost:5000`;
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
@@ -1446,14 +1466,14 @@ export default function VolunteerNotifications() {
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Master switch — full on/off</div>
               </div>
               <label className="toggle">
-                <input type="checkbox" checked={preferences.masterPush} onChange={() => setPreferences(p => ({ ...p, masterPush: !p.masterPush }))} />
+                <input type="checkbox" checked={preferences.masterPush} onChange={() => handleTogglePreference('masterPush', !preferences.masterPush)} />
                 <span className="toggle-slider" />
               </label>
             </div>
 
             {[
               { key: 'pushChannel', label: "Push notifications (Push)", icon: Smartphone, desc: "Receive instant push notifications" },
-              { key: 'smsChannel', label: 'SMS', icon: Phone, desc: "Receive phone messages" },
+              { key: 'emailChannel', label: 'Email', icon: Mail, desc: "Receive email updates" },
             ].map(row => {
               const Icon = row.icon;
               return (
@@ -1466,7 +1486,7 @@ export default function VolunteerNotifications() {
                     </div>
                   </div>
                   <label className="toggle">
-                    <input type="checkbox" checked={preferences[row.key]} onChange={() => setPreferences(p => ({ ...p, [row.key]: !p[row.key] }))} disabled={!preferences.masterPush} />
+                    <input type="checkbox" checked={preferences[row.key]} onChange={() => handleTogglePreference(row.key, !preferences[row.key])} disabled={!preferences.masterPush} />
                     <span className="toggle-slider" />
                   </label>
                 </div>
@@ -1481,8 +1501,7 @@ export default function VolunteerNotifications() {
             {[
               { key: 'sos', label: "SOS & Request Rescue", desc: "Emergency notifications", color: 'var(--red-400)' },
               { key: 'flood', label: "Flood warning", desc: "Update water level in warning zone" },
-              { key: 'reward', label: "Bonus points & milestones", desc: "Personal rescue achievements" },
-              { key: 'team', label: "Groups & Communities", desc: "Rescue group messages" },
+              { key: 'community', label: "Community & Forum", desc: "Comment, like and respond to posts" },
             ].map(row => (
               <div key={row.key} style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', border: `1px solid ${preferences[row.key] ? (row.color || 'var(--cyan-400)') + '44' : 'var(--border-dim)'}`, background: preferences[row.key] ? (row.color || 'var(--cyan-400)') + '08' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.2s', opacity: preferences.masterPush ? 1 : 0.4 }}>
                 <div>
@@ -1490,7 +1509,7 @@ export default function VolunteerNotifications() {
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{row.desc}</div>
                 </div>
                 <label className="toggle">
-                  <input type="checkbox" checked={preferences[row.key]} onChange={() => setPreferences(p => ({ ...p, [row.key]: !p[row.key] }))} disabled={!preferences.masterPush} />
+                  <input type="checkbox" checked={preferences[row.key]} onChange={() => handleTogglePreference(row.key, !preferences[row.key])} disabled={!preferences.masterPush} />
                   <span className="toggle-slider" />
                 </label>
               </div>
@@ -1501,9 +1520,9 @@ export default function VolunteerNotifications() {
       {toast && (
         <div style={{
           position: 'fixed',
-          bottom: 24,
+          top: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 100000,
           width: 320,
           background: 'rgba(18, 29, 40, 0.95)',
           backdropFilter: 'blur(12px)',

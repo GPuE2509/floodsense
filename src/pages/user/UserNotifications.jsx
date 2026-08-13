@@ -450,7 +450,8 @@ export default function UserNotifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^http/, 'ws') : 'ws://localhost:5000');
+    // Use current location origin to determine WS port, default to localhost:5000
+    const wsUrl = `ws://localhost:5000`;
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
@@ -1319,10 +1320,21 @@ export default function UserNotifications() {
               };
               const userRole = getUserRole();
               const isAdminOrManager = userRole === 'Admin' || userRole === 'Manager';
+              const isVolunteer = userRole === 'Volunteer' || userRole === 'volunteer';
+              const isWorkshop = userRole === 'Workshop' || userRole === 'workshop';
+              
               const preferenceOptions = isAdminOrManager ? [
                 { key: 'flood', label: "IoT Telemetry & Hardware warnings", desc: "IoT low battery warnings and automated sensor alerts", icon: AlertTriangle, color: 'var(--cyan-400)' },
                 { key: 'sos', label: "SOS Monitoring & Emergencies", desc: "Real-time citizen SOS alerts and rescue session updates", icon: Zap, color: 'var(--orange-400)' },
                 { key: 'community', label: "Approvals & Moderation Requests", desc: "Registration requests (Volunteers, Workshops) and Community report flags", icon: Users, color: 'var(--green-400)' },
+              ] : isVolunteer ? [
+                { key: 'sos', label: "SOS & Request Rescue", desc: "Emergency notifications and new rescue missions", icon: Zap, color: 'var(--red-400)' },
+                { key: 'flood', label: "Flood warning", desc: "Update water level in warning zone", icon: AlertTriangle, color: 'var(--cyan-400)' },
+                { key: 'community', label: "Community & Forum", desc: "Comment, like and respond to posts", icon: Users, color: 'var(--green-400)' },
+              ] : isWorkshop ? [
+                { key: 'sos', label: "SOS & Mobile Repair Requests", desc: "New emergency repair orders and tasks", icon: Zap, color: 'var(--red-400)' },
+                { key: 'flood', label: "Flood warning", desc: "Update water level in warning zone", icon: AlertTriangle, color: 'var(--cyan-400)' },
+                { key: 'community', label: "Community & Forum", desc: "Comment, like and respond to reviews/posts", icon: Users, color: 'var(--green-400)' },
               ] : [
                 { key: 'flood', label: "Flooding & warnings", desc: "Notification when there is a flooding event in the area", icon: AlertTriangle, color: 'var(--cyan-400)' },
                 { key: 'sos', label: "SOS & Rescue", desc: "Status of your rescue request", icon: Zap, color: 'var(--orange-400)' },
@@ -1362,9 +1374,9 @@ export default function UserNotifications() {
       {toast && (
         <div style={{
           position: 'fixed',
-          bottom: 24,
+          top: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 100000,
           width: 320,
           background: 'rgba(18, 29, 40, 0.95)',
           backdropFilter: 'blur(12px)',

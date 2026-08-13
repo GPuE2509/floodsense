@@ -4,7 +4,7 @@ import {
   Camera, MapPin, Upload, CheckCircle, XCircle,
   Search, Bot, User, ThumbsUp, ThumbsDown, FileText,
   AlertTriangle, Image as ImageIcon, X, Flag,
-  Crosshair, Clock, Eye, MessageSquare, Loader
+  Crosshair, Clock, Eye, MessageSquare, Loader, RefreshCw
 } from 'lucide-react';
 import { communityReports } from '../../data/mockData';
 import { apiService } from '../../services/apiService';
@@ -71,7 +71,15 @@ export default function UserReports() {
   const [reportType, setReportType] = useState('flood');
   const [form, setForm] = useState({ location: '', description: '', severity: 'Medium', consent: false });
   const [images, setImages] = useState([]);
-  const [toast, setToast] = useState(null);
+  const setToast = (obj) => {
+    if (!obj) return;
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: {
+        message: obj.message,
+        type: obj.type || 'info'
+      }
+    }));
+  };
   const [submitted, setSubmitted] = useState(false);
   const [searchVerify, setSearchVerify] = useState('');
   const [votes, setVotes] = useState({});
@@ -91,6 +99,93 @@ export default function UserReports() {
   const [aiResult, setAiResult] = useState(null);
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState('report'); // 'report' or 'vote'
+  const [facingMode, setFacingMode] = useState('environment');
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const startCamera = async (target, customFacing) => {
+    const mode = customFacing || facingMode;
+    setCameraTarget(target);
+    setCameraActive(true);
+    // Wait briefly for the DOM element to mount before accessing stream
+    setTimeout(async () => {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        streamRef.current = mediaStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err) {
+        console.error("Failed to access camera", err);
+        setToast({ type: 'error', message: 'Cannot access camera. Please check permissions.' });
+        setTimeout(() => setToast(null), 3000);
+        setCameraActive(false);
+      }
+    }, 100);
+  };
+
+  const toggleCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    startCamera(cameraTarget, nextMode);
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      // If front camera, you can mirror it, but environment facingMode doesn't need mirror
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+      if (cameraTarget === 'report') {
+        if (images.length >= 10) {
+          setToast({ type: 'error', message: 'You can only upload up to 10 images.' });
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          const newImg = {
+            url: base64Data,
+            name: `captured_${Date.now()}.jpg`
+          };
+          const updated = [...images, newImg];
+          setImages(updated);
+          if (reportType === 'flood') {
+            analyzeAllMissingImages(updated);
+          }
+        }
+      } else {
+        setVotePhotos(prev => [...prev, base64Data]);
+      }
+      stopCamera();
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -157,7 +252,7 @@ export default function UserReports() {
         if (userId) {
           data.data.forEach(report => {
             if (report.voters && report.voters.length > 0) {
-              const userVote = report.voters.find(v => v.user_id === userId);
+              const userVote = report.voters.find(v => (v.user_id?._id || v.user_id)?.toString() === userId.toString());
               if (userVote) {
                 initialVotes[report._id] = userVote.vote_type;
               }
@@ -687,10 +782,10 @@ export default function UserReports() {
                     <option value="Serious">Serious</option>
                   </select>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>
-                  <Camera size={13} /> Attach photos
+                <button className="btn btn-ghost btn-sm" onClick={() => startCamera('report')}>
+                  <Camera size={13} /> Take photo
                 </button>
-                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={(e) => { handleImageUpload(e); setErrors(p => ({ ...p, images: null })); }} style={{ display: 'none' }} />
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => { handleImageUpload(e); setErrors(p => ({ ...p, images: null })); }} style={{ display: 'none' }} />
                 {images.length > 0 && <span style={{ fontSize: '0.72rem', color: 'var(--cyan-400)', fontWeight: 600 }}>{images.length} {images.length > 1 ? 'images' : 'image'}</span>}
               </div>
 
@@ -712,7 +807,7 @@ export default function UserReports() {
                   ))}
                   {/* Placeholder add more */}
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => startCamera('report')}
                     style={{ width: 72, height: 72, borderRadius: 'var(--r-sm)', border: '1px dashed var(--border-dim)', background: 'rgba(18,29,40,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}
                   >
                     <ImageIcon size={16} color="var(--text-muted)" />
@@ -824,7 +919,7 @@ export default function UserReports() {
 
       {/* ── BÁO CÁO CỦA TÔI ── */}
       {activeTab === 'my' && (
-        <div style={{ display: 'grid', gap: 12, minHeight: 200, position: 'relative' }}>
+        <div style={{ display: 'grid', gap: 12, minHeight: 200, position: 'relative', alignContent: 'start' }}>
           {isLoadingReports ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 20px', color: 'var(--cyan-400)' }}>
               <Loader className="animate-spin" size={24} />
@@ -889,11 +984,66 @@ export default function UserReports() {
               );
             })
           )}
-          {myReportsFiltered.length > 5 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-              <button className="btn btn-ghost btn-sm" disabled={pageMy === 1} onClick={() => setPageMy(p => Math.max(1, p - 1))}>Previous</button>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>Page {pageMy} of {totalMyPages}</span>
-              <button className="btn btn-ghost btn-sm" disabled={pageMy === totalMyPages} onClick={() => setPageMy(p => Math.min(totalMyPages, p + 1))}>Next</button>
+          {myReportsFiltered.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--r-md)',
+              marginTop: 12
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{myReportsFiltered.length === 0 ? 0 : (pageMy - 1) * 5 + 1}-{Math.min(pageMy * 5, myReportsFiltered.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{myReportsFiltered.length}</strong> reports
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setPageMy(p => Math.max(1, p - 1))}
+                  disabled={pageMy === 1}
+                  style={{ opacity: pageMy === 1 ? 0.5 : 1 }}
+                >
+                  Previous
+                </button>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Page 
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalMyPages}
+                    value={pageMy}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 1 && val <= totalMyPages) {
+                        setPageMy(val);
+                      }
+                    }}
+                    style={{
+                      width: 44,
+                      padding: '4px 6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 4,
+                      color: 'var(--text-primary)',
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                  of {totalMyPages}
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setPageMy(p => Math.min(totalMyPages, p + 1))}
+                  disabled={pageMy === totalMyPages}
+                  style={{ opacity: pageMy === totalMyPages ? 0.5 : 1 }}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -914,7 +1064,7 @@ export default function UserReports() {
             <input className="input" placeholder="Find reports that need verification..." value={searchVerify} onChange={e => setSearchVerify(e.target.value)} />
           </div>
 
-          <div style={{ display: 'grid', gap: 14, minHeight: 200, position: 'relative' }}>
+          <div style={{ display: 'grid', gap: 14, minHeight: 200, position: 'relative', alignContent: 'start' }}>
             {isLoadingReports ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 20px', color: 'var(--cyan-400)' }}>
                 <Loader className="animate-spin" size={24} />
@@ -1031,38 +1181,71 @@ export default function UserReports() {
                 );
               }))}
           </div>
-          {filteredVerify.length > 5 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-              <button className="btn btn-ghost btn-sm" disabled={pageVerify === 1} onClick={() => setPageVerify(p => Math.max(1, p - 1))}>Previous</button>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>Page {pageVerify} of {totalVerifyPages}</span>
-              <button className="btn btn-ghost btn-sm" disabled={pageVerify === totalVerifyPages} onClick={() => setPageVerify(p => Math.min(totalVerifyPages, p + 1))}>Next</button>
+          {filteredVerify.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--r-md)',
+              marginTop: 12
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{filteredVerify.length === 0 ? 0 : (pageVerify - 1) * 5 + 1}-{Math.min(pageVerify * 5, filteredVerify.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{filteredVerify.length}</strong> reports
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setPageVerify(p => Math.max(1, p - 1))}
+                  disabled={pageVerify === 1}
+                  style={{ opacity: pageVerify === 1 ? 0.5 : 1 }}
+                >
+                  Previous
+                </button>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Page 
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalVerifyPages}
+                    value={pageVerify}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 1 && val <= totalVerifyPages) {
+                        setPageVerify(val);
+                      }
+                    }}
+                    style={{
+                      width: 44,
+                      padding: '4px 6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 4,
+                      color: 'var(--text-primary)',
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                  of {totalVerifyPages}
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setPageVerify(p => Math.min(totalVerifyPages, p + 1))}
+                  disabled={pageVerify === totalVerifyPages}
+                  style={{ opacity: pageVerify === totalVerifyPages ? 0.5 : 1 }}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Top Right Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: 24,
-          right: 24,
-          zIndex: 9999,
-          background: toast.type === 'success' ? 'var(--green-400)' : 'var(--red-400)',
-          color: toast.type === 'success' ? '#064e3b' : '#ffffff',
-          padding: '12px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          fontWeight: 600,
-          fontSize: '0.85rem',
-        }}>
-          {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
-          {toast.message}
-        </div>
-      )}
 
       {/* ── REPORT DETAILS MODAL ── */}
       {selectedReport && (
@@ -1177,7 +1360,7 @@ export default function UserReports() {
                     </div>
                   )}
 
-                  <input ref={voteFileInputRef} type="file" accept="image/*" multiple onChange={handleVotePhotoUpload} style={{ display: 'none' }} />
+                  <input ref={voteFileInputRef} type="file" accept="image/*" capture="environment" onChange={handleVotePhotoUpload} style={{ display: 'none' }} />
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
                     {(() => {
@@ -1243,8 +1426,8 @@ export default function UserReports() {
                                     )}
                                   </button>
                                   {!isVoting && (
-                                    <button className="btn btn-sm btn-ghost" onClick={() => voteFileInputRef.current?.click()} style={{ color: 'var(--cyan-400)' }}>
-                                      <Camera size={14} /> Add More Photos
+                                    <button className="btn btn-sm btn-ghost" onClick={() => startCamera('vote')} style={{ color: 'var(--cyan-400)' }}>
+                                      <Camera size={14} /> Take More Photos
                                     </button>
                                   )}
                                 </div>
@@ -1255,10 +1438,10 @@ export default function UserReports() {
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                  Attach proof photo to extend your report duration.
+                                  Take proof photo to extend your report duration.
                                 </span>
-                                <button className="btn btn-sm btn-primary" onClick={() => voteFileInputRef.current?.click()} disabled={isVoting} style={{ gap: 6 }}>
-                                  <Camera size={14} /> Attach Proof
+                                <button className="btn btn-sm btn-primary" onClick={() => startCamera('vote')} disabled={isVoting} style={{ gap: 6 }}>
+                                  <Camera size={14} /> Take Proof Photo
                                 </button>
                               </div>
                             )}
@@ -1278,8 +1461,8 @@ export default function UserReports() {
                             <Flag size={14} /> Wrong report
                           </button>
                           <div style={{ flex: 1 }}></div>
-                          <button className="btn btn-sm btn-ghost" onClick={() => voteFileInputRef.current?.click()} disabled={isVoting} style={{ color: 'var(--cyan-400)', gap: 6 }}>
-                            <Camera size={14} /> {votePhotos.length > 0 ? `Proof (${votePhotos.length})` : 'Attach Proof'}
+                          <button className="btn btn-sm btn-ghost" onClick={() => startCamera('vote')} disabled={isVoting} style={{ color: 'var(--cyan-400)', gap: 6 }}>
+                            <Camera size={14} /> {votePhotos.length > 0 ? `Proof (${votePhotos.length})` : 'Take Proof Photo'}
                           </button>
                         </div>
                       );
@@ -1299,6 +1482,53 @@ export default function UserReports() {
             <X size={24} />
           </button>
           <img src={fullscreenImage} alt="fullscreen" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} />
+        </div>
+      )}
+      {/* ── CUSTOM WEBCAM CAPTURE MODAL ── */}
+      {cameraActive && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.9)', zIndex: 4000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{ position: 'relative', width: '95%', maxWidth: 960, borderRadius: 12, overflow: 'hidden', background: '#000', border: '2px solid var(--cyan-400)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block', transform: 'scaleX(1)' }}
+            />
+            <div style={{
+              position: 'absolute', bottom: 20, left: 0, right: 0,
+              display: 'flex', justifyContent: 'center', gap: 16
+            }}>
+              <button
+                className="btn btn-primary"
+                onClick={capturePhoto}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+              >
+                <Camera size={28} />
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={toggleCamera}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, background: 'rgba(255,255,255,0.2)', color: '#fff' }}
+                title="Switch Camera"
+              >
+                <RefreshCw size={24} />
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={stopCamera}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+              >
+                <X size={28} />
+              </button>
+            </div>
+          </div>
+          <div style={{ marginTop: 12, color: '#fff', fontSize: '0.85rem' }}>
+            Position yourself and click the capture button to take photo
+          </div>
         </div>
       )}
     </div>

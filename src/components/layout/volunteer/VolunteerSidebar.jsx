@@ -18,7 +18,6 @@ const navItems = [
     items: [
       { id: 'volunteer-missions', label: "Request SOS", icon: ShieldAlert, badge: null },
       { id: 'volunteer-profile',  label: "Volunteer profile",       icon: UserCheck, badge: null },
-      { id: 'volunteer-rewards',  label: "Honor board",   icon: Trophy, badge: null },
     ],
   },
   {
@@ -29,6 +28,7 @@ const navItems = [
       { id: 'volunteer-notifications', label: "Notifications & Chat", icon: Bell, badge: null },
       { id: 'volunteer-forum',         label: "Community forum",       icon: MessageSquare,   badge: null },
       { id: 'volunteer-guidelines',    label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
+      { id: 'volunteer-rewards',  label: "Honor board",   icon: Trophy, badge: null },
     ],
   },
 ];

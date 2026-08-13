@@ -414,9 +414,13 @@ export default function CommunityReports() {
       });
       if (res.ok) {
         setReports((prev) => prev.map((r) => r._id === id ? { ...r, status: action } : r));
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Report successfully ${action === 'approved' ? 'approved' : (action === 'rejected' ? 'rejected' : 'archived')}!`, type: 'success' } }));
+      } else {
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Failed to ${action} report.`, type: 'error' } }));
       }
     } catch (err) {
       console.error(err);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Connection error while processing report.', type: 'error' } }));
     }
   };
 
@@ -626,21 +630,27 @@ export default function CommunityReports() {
           </div>
 
           {/* Clean Centered Pagination Controls */}
-          {totalPages > 1 && (
+          {displayReports.length > 0 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              padding: '24px 20px',
-              marginTop: '16px'
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--r-md)',
+              marginTop: 16
             }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{displayReports.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, displayReports.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{displayReports.length}</strong> reports
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {/* Previous Arrow < */}
                 <button
                   className="btn btn-ghost btn-sm btn-icon"
                   disabled={currentPage <= 1}
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage <= 1 ? 0.5 : 1 }}
                   title="Previous Page"
                 >
                   <ChevronLeft size={16} />
@@ -663,7 +673,7 @@ export default function CommunityReports() {
                   className="btn btn-ghost btn-sm btn-icon"
                   disabled={currentPage >= totalPages}
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage >= totalPages ? 0.5 : 1 }}
                   title="Next Page"
                 >
                   <ChevronRight size={16} />
