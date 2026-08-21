@@ -203,7 +203,7 @@ export default function UserApp({
     let retryTimer;
 
     const connect = () => {
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+      const wsUrl = `wss://floodsenseapi.onrender.com`;
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {

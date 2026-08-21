@@ -314,34 +314,45 @@ export default function OperationLogs() {
           </div>
 
           {/* Pagination */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: 16 }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 0 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 8,
+            padding: '12px 20px',
+            borderTop: '1px solid var(--border-subtle)',
+            background: 'var(--bg-surface)'
+          }}>
+            <span className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               Show {total === 0 ? 0 : (page - 1) * limit + 1}–{Math.min(page * limit, total)} / {total} Audit Log
             </span>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm btn-icon"
                 disabled={page === 1}
                 onClick={() => handlePageChange(page - 1)}
+                style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={16} />
               </button>
               {Array.from({ length: totalPages }, (_, i) => (
                 <button
                   key={i + 1}
                   className={`btn btn-sm ${page === i + 1 ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ padding: '5px 10px' }}
+                  style={{ width: 32, height: 32, padding: 0, fontWeight: 700, fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   onClick={() => handlePageChange(i + 1)}
                 >
                   {i + 1}
                 </button>
               ))}
               <button
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm btn-icon"
                 disabled={page === totalPages || totalPages === 0}
                 onClick={() => handlePageChange(page + 1)}
+                style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>

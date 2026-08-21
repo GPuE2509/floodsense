@@ -66,7 +66,7 @@ export default function IncidentProcessingLogs() {
     let ws;
     let reconnectTimer;
     const connectWs = () => {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com/api';
       const wsUrl = backendUrl.replace('http', 'ws').replace('/api', '');
       ws = new WebSocket(wsUrl);
       ws.onmessage = (event) => {
@@ -360,13 +360,14 @@ export default function IncidentProcessingLogs() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              padding: '16px 20px',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+              padding: '12px 20px',
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-surface)'
             }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 20 }}>
+              <span className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Show {filteredLogs.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredLogs.length)} / {filteredLogs.length} Log
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

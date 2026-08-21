@@ -238,14 +238,16 @@ export default function DataRetentionConfig() {
 
             {/* ACTION ROW: TOGGLE & MANUAL RUN */}
             <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '14px',
+              display: 'flex', flexWrap: 'wrap', gap: 12, padding: '14px',
               background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--r-md)', marginBottom: 20
+              borderRadius: 'var(--r-md)', marginBottom: 20,
+              alignItems: 'stretch',
             }}>
               {/* TOGGLE BLOCK */}
               <div
                 onClick={!saving ? handleToggleAuto : undefined}
                 style={{
+                  flex: '1 1 auto', minWidth: 180,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 12px', borderRadius: 'var(--r-sm)',
                   background: 'var(--bg-card)',
@@ -274,12 +276,14 @@ export default function DataRetentionConfig() {
                 disabled={runningNow || saving}
                 className="btn"
                 style={{
+                  flex: '1 1 auto', minWidth: 160,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   padding: '10px 12px', borderRadius: 'var(--r-sm)',
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   color: 'var(--red-400)', fontWeight: 600, fontSize: '0.82rem',
-                  cursor: runningNow ? 'not-allowed' : 'pointer'
+                  cursor: runningNow ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {runningNow ? <RefreshCw className="animate-spin" size={14} /> : <Play size={14} />}
@@ -568,7 +572,7 @@ export default function DataRetentionConfig() {
         {/* PAGINATION CONTROLS */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 0 0', marginTop: 16, borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap', gap: 12 }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            <span className="pagination-showing-text" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, streamBatches.length)} of {streamBatches.length} batches
             </span>
 

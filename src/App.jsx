@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './components/layout/admin/Sidebar';
 import TopBar from './components/layout/admin/TopBar';
 import AnimatedBackground from './components/background/AnimatedBackground';
+import MobileSidebarToggle from './components/layout/MobileSidebarToggle';
 
 
 const CommunityReports = lazy(() => import('./pages/admin/CommunityReports'));
@@ -155,6 +156,9 @@ export default function App({
     <>
       {/* ── Animated rain + city background ── */}
       <AnimatedBackground />
+
+      {/* ── Mobile hamburger + overlay (visible only on small screens) ── */}
+      <MobileSidebarToggle />
 
       {/* ── App shell ── */}
       <div className="app-layout" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>

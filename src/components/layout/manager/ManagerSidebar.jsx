@@ -46,8 +46,7 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
     const token = localStorage.getItem('token');
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    fetch(`${backendUrl}/api/incident-reports`)
+    fetch('https://floodsenseapi.onrender.com/api/incident-reports')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -57,7 +56,7 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
       })
       .catch(err => console.error(err));
 
-    fetch(`${backendUrl}/api/forum/moderation-stats`, { headers })
+    fetch('https://floodsenseapi.onrender.com/api/forum/moderation-stats', { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -66,7 +65,7 @@ export default function ManagerSidebar({ activePage, onNavigate, collapsed, onTo
       })
       .catch(err => console.error(err));
 
-    fetch(`${backendUrl}/api/auth/admin/role-requests`, { headers })
+    fetch('https://floodsenseapi.onrender.com/api/auth/admin/role-requests', { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.requests) {

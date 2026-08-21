@@ -926,7 +926,7 @@ export default function WorkshopShop() {
               {shop.services.filter(s => s.active).length} service is active
             </div>
             {isOwner && (
-              <button className="btn btn-primary btn-sm" onClick={() => { setAddingService(true); setNewServiceErrors({}); }}>
+              <button className="btn btn-primary btn-sm" onClick={() => { setAddingService(true); setNewService({ name: '', category: "Basic repair", price: '', unit: "turn", desc: '' }); setNewServiceErrors({}); }}>
                 <Plus size={13} /> Add services
               </button>
             )}
@@ -969,7 +969,7 @@ export default function WorkshopShop() {
                 <button className="btn btn-success btn-sm" onClick={addService} disabled={isSavingService}>
                   <CheckCircle size={13} /> {isSavingService ? "Adding..." : "Add"}
                 </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => { setAddingService(false); setNewServiceErrors({}); }} disabled={isSavingService}>Cancel</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setAddingService(false); setNewService({ name: '', category: "Basic repair", price: '', unit: "turn", desc: '' }); setNewServiceErrors({}); }} disabled={isSavingService}>Cancel</button>
               </div>
             </div>
           )}

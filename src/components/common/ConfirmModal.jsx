@@ -42,18 +42,21 @@ export default function ConfirmModal({
 
   return (
     <div style={{
-      position,
+      position: 'fixed',
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
+      width: '100vw',
+      height: '100vh',
       backgroundColor: 'rgba(8, 13, 22, 0.85)',
       backdropFilter: 'blur(8px)',
-      zIndex: 20000,
+      zIndex: 99999,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 12
+      padding: 12,
+      boxSizing: 'border-box'
     }}>
       <div style={{
         background: '#0f172a',

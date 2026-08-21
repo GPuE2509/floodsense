@@ -361,12 +361,20 @@ export default function CommunityReports() {
 
   React.useEffect(() => {
     fetchReports();
+
+    const handleIncidentUpdate = () => {
+      fetchReports();
+    };
+
+    window.addEventListener('incident-update', handleIncidentUpdate);
+    return () => {
+      window.removeEventListener('incident-update', handleIncidentUpdate);
+    };
   }, []);
 
   const fetchReports = async () => {
     try {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/incident-reports`);
+      const res = await fetch('https://floodsenseapi.onrender.com/api/incident-reports');
       const data = await res.json();
       if (data.success) {
         const mappedData = data.data.map(r => ({ 
@@ -375,6 +383,11 @@ export default function CommunityReports() {
           lifecycle_status: r.lifecycle_status || 'Active'
         }));
         setReports(mappedData);
+        setSelectedReport(prev => {
+          if (!prev) return null;
+          const updated = mappedData.find(r => r._id === prev._id || r.id === prev._id || r._id === prev.id);
+          return updated || prev;
+        });
       }
     } catch (err) {
       console.error(err);
@@ -408,14 +421,18 @@ export default function CommunityReports() {
       if (severity) {
         payload.severity = severity;
       }
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/incident-reports/${id}/status`, {
+      const res = await fetch(`https://floodsenseapi.onrender.com/api/incident-reports/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setReports((prev) => prev.map((r) => r._id === id ? { ...r, status: action } : r));
+        if (action === 'archive') {
+          setReports((prev) => prev.map((r) => r._id === id ? { ...r, lifecycle_status: 'Archived' } : r));
+        } else {
+          setReports((prev) => prev.map((r) => r._id === id ? { ...r, status: action, moderation_status: action.charAt(0).toUpperCase() + action.slice(1) } : r));
+        }
+        await fetchReports();
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Report successfully ${action === 'approved' ? 'approved' : (action === 'rejected' ? 'rejected' : 'archived')}!`, type: 'success' } }));
       } else {
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Failed to ${action} report.`, type: 'error' } }));
@@ -544,14 +561,14 @@ export default function CommunityReports() {
                     opacity: lcStatus === 'Archived' ? 0.6 : 1,
                   }}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="report-card-row flex items-start gap-4" style={{ flexWrap: 'wrap' }}>
                     {/* Avatar */}
                     <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6cff,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', color: 'white', flexShrink: 0 }}>
                       {(report.reporter_id?.full_name || report.reporter_name || 'A').charAt(0).toUpperCase()}
                     </div>
 
                     {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="report-card-content" style={{ flex: '1 1 220px', minWidth: 200 }}>
                       <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 6 }}>
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{report.reporter_id?.full_name || report.reporter_name || 'Anonymous'}</span>
                         {statusBadge[rStatus]}
@@ -579,7 +596,7 @@ export default function CommunityReports() {
                         )}
                       </div>
 
-                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: parsedImages.length > 0 ? 12 : 0 }}>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: parsedImages.length > 0 ? 12 : 0, wordBreak: 'break-word' }}>
                         {report.description}
                       </div>
 
@@ -601,7 +618,7 @@ export default function CommunityReports() {
 
                     {/* Actions */}
                     {rStatus === 'pending' && (
-                      <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                      <div className="report-card-actions flex items-center gap-2" style={{ flexShrink: 0 }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => setSelectedReport(report)}>
                           <Eye size={13} /> Detail
                         </button>
@@ -614,7 +631,7 @@ export default function CommunityReports() {
                       </div>
                     )}
                     {rStatus !== 'pending' && (
-                      <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                      <div className="report-card-actions flex items-center gap-2" style={{ flexShrink: 0 }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => setSelectedReport(report)}>
                           <Eye size={13} /> Detail
                         </button>
@@ -637,13 +654,15 @@ export default function CommunityReports() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
               padding: '16px 20px',
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-surface)',
               borderRadius: 'var(--r-md)',
               marginTop: 16
             }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <div className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Showing <strong style={{ color: 'var(--text-primary)' }}>{displayReports.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, displayReports.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{displayReports.length}</strong> reports
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
