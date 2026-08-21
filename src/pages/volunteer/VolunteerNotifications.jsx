@@ -288,6 +288,13 @@ export default function VolunteerNotifications() {
   const imageInputRef = useRef(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -377,7 +384,7 @@ export default function VolunteerNotifications() {
           }
 
           setConvList(loadedConvs);
-          if (loadedConvs.length > 0 && !activeConv) {
+          if (loadedConvs.length > 0 && !activeConv && !isMobile) {
             setActiveConv(loadedConvs[0]);
           }
         }
@@ -438,7 +445,8 @@ export default function VolunteerNotifications() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
@@ -860,7 +868,7 @@ export default function VolunteerNotifications() {
   ];
 
   return (
-    <div className="page-enter" style={{ height: 'calc(100vh - 130px)', display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div className="page-enter" style={{ height: (isMobile && activeTab !== 'chat') ? 'auto' : 'calc(100vh - 130px)', display: 'flex', flexDirection: 'column', gap: 0 }}>
       
       {/* Page header */}
       <div className="page-header" style={{ marginBottom: 16, flexShrink: 0 }}>
@@ -884,14 +892,24 @@ export default function VolunteerNotifications() {
 
       {/* ── NOTIFICATIONS TAB ── */}
       {activeTab === 'notifications' && (
-        <div className="card" style={{ overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '12px 18px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <div className="flex items-center gap-3">
-              <div className="section-title">Personal notification center</div>
-              {unreadCount > 0 && <span className="badge badge-red" style={{ fontSize: '0.62rem' }}>{unreadCount} unread notification</span>}
+        <div className="card" style={{ overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+          <div style={{
+            padding: '12px 18px',
+            background: 'var(--bg-elevated)',
+            borderBottom: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 8,
+            flexShrink: 0
+          }}>
+            <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+              <div className="section-title" style={{ fontSize: isMobile ? '0.82rem' : '0.9rem' }}>Personal notification center</div>
+              {unreadCount > 0 && <span className="badge badge-red" style={{ fontSize: '0.62rem', padding: '2px 8px' }}>{unreadCount} unread</span>}
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={markAll}>
-              <CheckCircle size={12} /> Mark all as read
+            <button className="btn btn-ghost btn-sm" onClick={markAll} style={{ fontSize: '0.72rem', padding: '4px 8px' }}>
+              <CheckCircle size={12} /> {isMobile ? "Read all" : "Mark all as read"}
             </button>
           </div>
 
@@ -929,8 +947,8 @@ export default function VolunteerNotifications() {
                     <Icon size={14} color={cfg.color} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{n.title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{n.title}</span>
                       {!n.read && <span style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.color, flexShrink: 0 }} />}
                     </div>
                     {n.body && (
@@ -986,21 +1004,24 @@ export default function VolunteerNotifications() {
                             alignItems: 'center',
                             gap: 5,
                             cursor: 'pointer',
-                            fontWeight: 600
+                            fontWeight: 600,
+                            whiteSpace: 'normal',
+                            textAlign: 'left'
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigator.clipboard.writeText(phoneToCopy);
                           }}
                         >
-                          <Phone size={12} /> Copy Phone Number: {phoneToCopy}
+                          <Phone size={12} style={{ flexShrink: 0 }} /> 
+                          <span>{isMobile ? `Copy Tel: ${phoneToCopy}` : `Copy Phone Number: ${phoneToCopy}`}</span>
                         </button>
                       </div>
                     )}
                   </div>
                   {!n.read && (
-                    <button className="btn btn-ghost btn-sm" onClick={() => markRead(n.id)} style={{ flexShrink: 0, fontSize: '0.7rem' }}>
-                      <Check size={11} /> Read
+                    <button className="btn btn-ghost btn-sm" onClick={() => markRead(n.id)} style={{ flexShrink: 0, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Mark as read">
+                      <Check size={14} />
                     </button>
                   )}
                 </div>
@@ -1013,12 +1034,32 @@ export default function VolunteerNotifications() {
 
       {/* ── CHAT TAB — Messenger Style ── */}
       {activeTab === 'chat' && (
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '300px 1fr', gap: 0, overflow: 'hidden', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{
+          flex: 1,
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : 'row',
+          gridTemplateColumns: isMobile ? undefined : '300px 1fr',
+          gap: 0,
+          overflow: 'hidden',
+          borderRadius: 'var(--r-lg)',
+          border: '1px solid var(--border-subtle)',
+          height: '100%',
+          minHeight: '480px'
+        }}>
           
           {/* Sidebar: Conversation list */}
-          <div style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* Sidebar header with mode toggle */}
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border-dim)', flexShrink: 0 }}>
+          {(!isMobile || !activeConv) && (
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRight: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              width: isMobile ? '100%' : '300px',
+              height: '100%'
+            }}>
+              {/* Sidebar header with mode toggle */}
+              <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border-dim)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                   {chatSidebarMode === 'convs' ? "Message" : chatSidebarMode === 'find' ? "Find users" : "Create Group"}
@@ -1254,12 +1295,30 @@ export default function VolunteerNotifications() {
               )}
             </div>
           </div>
+        )}
 
           {/* Main chat panel */}
           {activeConv ? (
-            <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'var(--bg-elevated)',
+              overflow: 'hidden',
+              flex: 1,
+              width: isMobile ? '100%' : undefined,
+              height: '100%'
+            }}>
               {/* Chat header */}
               <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, background: 'var(--bg-card)' }}>
+                {isMobile && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setActiveConv(null)}
+                    style={{ padding: '4px 8px', marginRight: 4, display: 'flex', alignItems: 'center', gap: 2, height: 32, fontWeight: 700, color: 'var(--cyan-400)' }}
+                  >
+                    ← Back
+                  </button>
+                )}
                 <div style={{ position: 'relative' }}>
                   {renderConvAvatar(activeConv, 36)}
                   {activeConv.online && (
@@ -1444,17 +1503,17 @@ export default function VolunteerNotifications() {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : !isMobile ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               Choose a chat to start
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
       {/* ── SETTINGS TAB ── */}
       {activeTab === 'settings' && (
-        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="grid" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="card p-6" style={{ display: 'grid', gap: 14 }}>
             <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Bell size={14} color="var(--red-400)" /> Notification channel

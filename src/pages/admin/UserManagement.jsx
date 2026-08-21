@@ -103,13 +103,13 @@ function RoleRequestDetailModal({ request, onClose, onAction, loading }) {
           {/* Thông tin người đăng ký */}
           <div style={{ marginBottom: 20 }}>
             <h4 style={{ color: 'var(--blue-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>Registrant information</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <div style={{ color: 'var(--text-muted)' }}>Full name:</div>
-              <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{request.userName}</div>
+              <div style={{ color: 'var(--text-primary)', fontWeight: 600, wordBreak: 'break-word' }}>{request.userName}</div>
               <div style={{ color: 'var(--text-muted)' }}>Email:</div>
-              <div style={{ fontFamily: 'var(--font-mono)' }}>{request.userEmail}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', wordBreak: 'break-word' }}>{request.userEmail}</div>
               <div style={{ color: 'var(--text-muted)' }}>Phone number:</div>
-              <div>{request.userPhone}</div>
+              <div style={{ wordBreak: 'break-word' }}>{request.userPhone}</div>
               <div style={{ color: 'var(--text-muted)' }}>Registration date:</div>
               <div>{request.date}</div>
             </div>
@@ -121,7 +121,7 @@ function RoleRequestDetailModal({ request, onClose, onAction, loading }) {
           {request.requestedRole === 'volunteer' ? (
             <div>
               <h4 style={{ color: 'var(--blue-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>Rescue vehicle information</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
                 <div style={{ color: 'var(--text-muted)' }}>Vehicle type:</div>
                 <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                   {details.vehicleType === 'Canoe' ? '💧 Cano' :
@@ -131,7 +131,7 @@ function RoleRequestDetailModal({ request, onClose, onAction, loading }) {
                 <div style={{ color: 'var(--text-muted)' }}>License plate number:</div>
                 <div style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{details.vehiclePlate}</div>
                 <div style={{ color: 'var(--text-muted)' }}>Coordinates (Lat, Lng):</div>
-                <div style={{ fontFamily: 'var(--font-mono)' }}>{details.currentLat || 'N/A'}, {details.currentLng || 'N/A'}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', wordBreak: 'break-word' }}>{details.currentLat || 'N/A'}, {details.currentLng || 'N/A'}</div>
               </div>
               {details.vehicleImage && (
                 <div>
@@ -145,21 +145,21 @@ function RoleRequestDetailModal({ request, onClose, onAction, loading }) {
           ) : (
             <div>
               <h4 style={{ color: 'var(--blue-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>Workshop information</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
                 <div style={{ color: 'var(--text-muted)' }}>Workshop name:</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{details.name}</div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 600, wordBreak: 'break-word' }}>{details.name}</div>
                 <div style={{ color: 'var(--text-muted)' }}>Workshop hotline:</div>
-                <div>{details.phone}</div>
+                <div style={{ wordBreak: 'break-word' }}>{details.phone}</div>
                 <div style={{ color: 'var(--text-muted)' }}>Address:</div>
-                <div>{details.address}</div>
+                <div style={{ wordBreak: 'break-word' }}>{details.address}</div>
                 <div style={{ color: 'var(--text-muted)' }}>Coordinates (Lat, Lng):</div>
-                <div style={{ fontFamily: 'var(--font-mono)' }}>{details.lat}, {details.lng}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', wordBreak: 'break-word' }}>{details.lat}, {details.lng}</div>
               </div>
 
               {details.services && details.services.length > 0 && (
                 <div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 8 }}>Registration service table:</div>
-                  <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--r-md)', overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-color)' }}>
@@ -577,26 +577,45 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
               </div>
 
               {/* Pagination */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: 16 }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 0 }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+                padding: '12px 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)'
+              }}>
+                <span className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Show {filteredUsers.length === 0 ? 0 : (page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredUsers.length)} / {filteredUsers.length} User
                 </span>
-                <div className="flex gap-2">
-                  <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                    <ChevronLeft size={14} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    className="btn btn-ghost btn-sm btn-icon"
+                    disabled={page === 1}
+                    onClick={() => setPage(p => p - 1)}
+                    style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronLeft size={16} />
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i + 1}
                       className={`btn btn-sm ${page === i + 1 ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{ padding: '5px 10px' }}
+                      style={{ width: 32, height: 32, padding: 0, fontWeight: 700, fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       onClick={() => setPage(i + 1)}
                     >
                       {i + 1}
                     </button>
                   ))}
-                  <button className="btn btn-ghost btn-sm" disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)}>
-                    <ChevronRight size={14} />
+                  <button
+                    className="btn btn-ghost btn-sm btn-icon"
+                    disabled={page === totalPages || totalPages === 0}
+                    onClick={() => setPage(p => p + 1)}
+                    style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>

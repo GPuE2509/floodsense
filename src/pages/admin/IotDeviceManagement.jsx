@@ -104,22 +104,22 @@ function AddDeviceModal({ onClose, onAdd }) {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <input className="input" style={{ borderColor: errors.lat ? 'var(--red-500)' : undefined }} placeholder="Latitude" type="number" value={formData.lat} onChange={e => { setFormData({...formData, lat: e.target.value}); setErrors({...errors, lat: ''}); }} />
+              <input className="input" style={{ borderColor: errors.lat ? 'var(--red-500)' : undefined }} placeholder="Latitude" type="number" value={formData.lat} onChange={e => { setFormData({...formData, lat: e.target.value}); setErrors({...errors, lat: ''}); }} onWheel={e => e.target.blur()} />
               {errors.lat && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.lat}</div>}
             </div>
             <div style={{ flex: 1 }}>
-              <input className="input" style={{ borderColor: errors.lng ? 'var(--red-500)' : undefined }} placeholder="Longitude" type="number" value={formData.lng} onChange={e => { setFormData({...formData, lng: e.target.value}); setErrors({...errors, lng: ''}); }} />
+              <input className="input" style={{ borderColor: errors.lng ? 'var(--red-500)' : undefined }} placeholder="Longitude" type="number" value={formData.lng} onChange={e => { setFormData({...formData, lng: e.target.value}); setErrors({...errors, lng: ''}); }} onWheel={e => e.target.blur()} />
               {errors.lng && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.lng}</div>}
             </div>
           </div>
           <div>
             <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Calibration Height (cm)</label>
-            <input className="input" style={{ borderColor: errors.calib_empty_cm ? 'var(--red-500)' : undefined }} type="number" value={formData.calib_empty_cm} onChange={e => { setFormData({...formData, calib_empty_cm: e.target.value}); setErrors({...errors, calib_empty_cm: ''}); }} />
+            <input className="input" style={{ borderColor: errors.calib_empty_cm ? 'var(--red-500)' : undefined }} type="number" value={formData.calib_empty_cm} onChange={e => { setFormData({...formData, calib_empty_cm: e.target.value}); setErrors({...errors, calib_empty_cm: ''}); }} onWheel={e => e.target.blur()} />
             {errors.calib_empty_cm && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.calib_empty_cm}</div>}
           </div>
           <div>
             <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Sleep Time (min)</label>
-            <input className="input" style={{ borderColor: errors.sleep_interval_minutes ? 'var(--red-500)' : undefined }} type="number" value={formData.sleep_interval_minutes} onChange={e => { setFormData({...formData, sleep_interval_minutes: e.target.value}); setErrors({...errors, sleep_interval_minutes: ''}); }} />
+            <input className="input" style={{ borderColor: errors.sleep_interval_minutes ? 'var(--red-500)' : undefined }} type="number" value={formData.sleep_interval_minutes} onChange={e => { setFormData({...formData, sleep_interval_minutes: e.target.value}); setErrors({...errors, sleep_interval_minutes: ''}); }} onWheel={e => e.target.blur()} />
             {errors.sleep_interval_minutes && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.sleep_interval_minutes}</div>}
           </div>
           <div>
@@ -233,22 +233,22 @@ function EditDeviceModal({ device, onClose, onEdit }) {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <input className="input" style={{ borderColor: errors.lat ? 'var(--red-500)' : undefined }} placeholder="Latitude" type="number" value={formData.lat} onChange={e => { setFormData({...formData, lat: e.target.value}); setErrors({...errors, lat: ''}); }} />
+              <input className="input" style={{ borderColor: errors.lat ? 'var(--red-500)' : undefined }} placeholder="Latitude" type="number" value={formData.lat} onChange={e => { setFormData({...formData, lat: e.target.value}); setErrors({...errors, lat: ''}); }} onWheel={e => e.target.blur()} />
               {errors.lat && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.lat}</div>}
             </div>
             <div style={{ flex: 1 }}>
-              <input className="input" style={{ borderColor: errors.lng ? 'var(--red-500)' : undefined }} placeholder="Longitude" type="number" value={formData.lng} onChange={e => { setFormData({...formData, lng: e.target.value}); setErrors({...errors, lng: ''}); }} />
+              <input className="input" style={{ borderColor: errors.lng ? 'var(--red-500)' : undefined }} placeholder="Longitude" type="number" value={formData.lng} onChange={e => { setFormData({...formData, lng: e.target.value}); setErrors({...errors, lng: ''}); }} onWheel={e => e.target.blur()} />
               {errors.lng && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.lng}</div>}
             </div>
           </div>
           <div>
             <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Calibration Height (cm)</label>
-            <input className="input" style={{ borderColor: errors.calib_empty_cm ? 'var(--red-500)' : undefined }} type="number" value={formData.calib_empty_cm} onChange={e => { setFormData({...formData, calib_empty_cm: e.target.value}); setErrors({...errors, calib_empty_cm: ''}); }} />
+            <input className="input" style={{ borderColor: errors.calib_empty_cm ? 'var(--red-500)' : undefined }} type="number" value={formData.calib_empty_cm} onChange={e => { setFormData({...formData, calib_empty_cm: e.target.value}); setErrors({...errors, calib_empty_cm: ''}); }} onWheel={e => e.target.blur()} />
             {errors.calib_empty_cm && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.calib_empty_cm}</div>}
           </div>
           <div>
             <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Sleep Time (min)</label>
-            <input className="input" style={{ borderColor: errors.sleep_interval_minutes ? 'var(--red-500)' : undefined }} type="number" value={formData.sleep_interval_minutes} onChange={e => { setFormData({...formData, sleep_interval_minutes: e.target.value}); setErrors({...errors, sleep_interval_minutes: ''}); }} />
+            <input className="input" style={{ borderColor: errors.sleep_interval_minutes ? 'var(--red-500)' : undefined }} type="number" value={formData.sleep_interval_minutes} onChange={e => { setFormData({...formData, sleep_interval_minutes: e.target.value}); setErrors({...errors, sleep_interval_minutes: ''}); }} onWheel={e => e.target.blur()} />
             {errors.sleep_interval_minutes && <div style={{ color: 'var(--red-400)', fontSize: '0.75rem', marginTop: 4, marginLeft: 4 }}>{errors.sleep_interval_minutes}</div>}
           </div>
           <div>
@@ -437,7 +437,7 @@ export default function IotDeviceManagement() {
 
     let ws = null;
     const connectWebSocket = () => {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com/api';
       const wsUrl = backendUrl.replace('http', 'ws').replace('/api', '');
       ws = new WebSocket(wsUrl);
 
@@ -523,6 +523,16 @@ export default function IotDeviceManagement() {
   return (
     <div className="page-enter">
       <style>{`
+        /* Hide spin-button arrows for number inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+
         .iot-toolbar {
           display: flex;
           align-items: center;
@@ -606,8 +616,9 @@ export default function IotDeviceManagement() {
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading devices...</div>
       ) : (
-        <div className="card table-wrapper iot-table-card">
-          <table className="data-table">
+        <div className="card iot-table-card" style={{ overflow: 'hidden' }}>
+          <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+            <table className="data-table">
             <thead>
               <tr>
                 <th>Device</th>
@@ -719,19 +730,21 @@ export default function IotDeviceManagement() {
               )}
             </tbody>
           </table>
+        </div>
 
           {/* Clean Centered Pagination Controls (10 items per page, max 3 pages shown, < and > arrow buttons) */}
           {totalPages >= 1 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              padding: '16px 20px',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+              padding: '12px 20px',
               borderTop: '1px solid var(--border-subtle)',
               background: 'var(--bg-surface)'
             }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', position: 'absolute', left: 20 }}>
+              <span className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Show {filteredDevices.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredDevices.length)} / {filteredDevices.length} Device
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

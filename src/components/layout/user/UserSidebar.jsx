@@ -43,8 +43,7 @@ export default function UserSidebar({ activePage, onNavigate, collapsed, onToggl
     const checkNew = async () => {
       const lastSeen = localStorage.getItem('lastVisitedCommunityVerification');
       try {
-        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${backendUrl}/api/incident-reports/new-count${lastSeen ? `?since=${lastSeen}` : ''}`);
+        const res = await fetch(`https://floodsenseapi.onrender.com/api/incident-reports/new-count${lastSeen ? `?since=${lastSeen}` : ''}`);
         const data = await res.json();
         if (data.success) setNewReportsCount(data.count);
       } catch (err) {

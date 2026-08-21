@@ -1,16 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Trophy, Star, Gift, Save, Plus, Trash2, ArrowUpRight, ArrowDownRight, UserPlus, CheckCircle, XCircle, Send, Search } from 'lucide-react';
+import { Trophy, Star, Gift, Save, Plus, Trash2, ArrowUpRight, ArrowDownRight, User, UserPlus, CheckCircle, XCircle, Send, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 import { AuthContext } from '../../context/AuthContext';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
-const leaderboardSeed = [
-  { rank: 1, name: 'Nguyen Van An', district: 'Quan 12', points: 1240, badge: 'HERO' },
-  { rank: 2, name: 'Tran Thi Binh', district: 'Hoc Mon', points: 1095, badge: 'SUPPORT' },
-  { rank: 3, name: 'Le Minh Chau', district: 'Thu Duc', points: 980, badge: 'VOLUNTEER' },
-  { rank: 4, name: 'Hoang Minh Tuan', district: 'Binh Thanh', points: 910, badge: 'REPORTER' },
-  { rank: 5, name: 'Nguyen Thi Lan', district: 'Quan 7', points: 870, badge: 'COMMUNITY' },
-];
+
 
 const rewardSeed = [
   { id: 'rw-01', name: '50k repair voucher', points: 120, badge: 'BRONZE' },
@@ -75,10 +69,34 @@ export default function PointsManagement() {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [sendingReward, setSendingReward] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardPage, setLeaderboardPage] = useState(1);
+  const [leaderboardLimit, setLeaderboardLimit] = useState(10);
+  const [leaderboardTotal, setLeaderboardTotal] = useState(0);
+  const [leaderboardTotalPages, setLeaderboardTotalPages] = useState(1);
 
   const showToast = (message, type = 'success') => {
     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
   };
+
+  const fetchLeaderboard = (page = leaderboardPage, limit = leaderboardLimit) => {
+    setLoadingLeaderboard(true);
+    apiService.get(`/leaderboard?tab=All&time=AllTime&page=${page}&limit=${limit}`)
+      .then(res => {
+        if (res) {
+          setLeaderboard(res.data || []);
+          setLeaderboardTotal(res.totalItems || 0);
+          setLeaderboardTotalPages(res.totalPages || 1);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingLeaderboard(false));
+  };
+
+  useEffect(() => {
+    fetchLeaderboard(leaderboardPage, leaderboardLimit);
+  }, [leaderboardPage, leaderboardLimit]);
 
   useEffect(() => {
     apiService.get('/admin/points-config')
@@ -195,6 +213,7 @@ export default function PointsManagement() {
       if (res.success) {
         showToast(res.message || 'Reward sent successfully!');
         closeSendModal();
+        fetchLeaderboard();
       }
     } catch (err) {
       console.error(err);
@@ -244,29 +263,103 @@ export default function PointsManagement() {
       </div>
 
       {activeTab === 'leaderboard' && (
-        <div className="card table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>Area</th>
-                <th>Points</th>
-                <th>Badge</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboardSeed.map(row => (
-                <tr key={row.rank}>
-                  <td style={{ fontFamily: 'var(--font-mono)' }}>#{row.rank}</td>
-                  <td style={{ fontWeight: 700 }}>{row.name}</td>
-                  <td>{row.district}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)', fontWeight: 700 }}>{row.points}</td>
-                  <td><span className="badge badge-cyan">{row.badge}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          {loadingLeaderboard ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 20px', color: 'var(--cyan-400)' }}>
+              <div className="spinner" style={{ width: 24, height: 24, border: '3px solid rgba(34, 211, 238, 0.2)', borderTopColor: 'var(--cyan-400)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading leaderboard...</span>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No data available</div>
+          ) : (
+            <>
+              <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Area / Info</th>
+                    <th>Points</th>
+                    <th>Badge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((row, index) => (
+                    <tr key={row.id || index}>
+                      <td style={{ fontFamily: 'var(--font-mono)' }}>#{(leaderboardPage - 1) * leaderboardLimit + index + 1}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        <div className="flex items-center" style={{ gap: 8 }}>
+                          {row.avatar_url ? (
+                            <img src={row.avatar_url} alt={row.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <User size={14} color="var(--text-muted)" />
+                            </div>
+                          )}
+                          <span>{row.name}</span>
+                        </div>
+                      </td>
+                      <td>{row.info || '-'}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)', fontWeight: 700 }}>{row.points}</td>
+                      <td>
+                        <span className={`badge ${
+                          row.badge === 'VOLUNTEER' ? 'badge-red' : 
+                          row.badge === 'WORKSHOP' ? 'badge-gold' : 
+                          'badge-cyan'
+                        }`}>{row.badge}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+              {/* Pagination */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+                padding: '12px 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)'
+              }}>
+                <span className="pagination-showing-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Show {leaderboard.length === 0 ? 0 : (leaderboardPage - 1) * leaderboardLimit + 1}–{Math.min(leaderboardPage * leaderboardLimit, leaderboardTotal)} / {leaderboardTotal} Contributors
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    className="btn btn-ghost btn-sm btn-icon"
+                    disabled={leaderboardPage === 1}
+                    onClick={() => setLeaderboardPage(p => p - 1)}
+                    style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: leaderboardTotalPages }, (_, i) => (
+                    <button
+                      key={i + 1}
+                      className={`btn btn-sm ${leaderboardPage === i + 1 ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{ width: 32, height: 32, padding: 0, fontWeight: 700, fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={() => setLeaderboardPage(i + 1)}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    className="btn btn-ghost btn-sm btn-icon"
+                    disabled={leaderboardPage === leaderboardTotalPages || leaderboardTotalPages === 0}
+                    onClick={() => setLeaderboardPage(p => p + 1)}
+                    style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

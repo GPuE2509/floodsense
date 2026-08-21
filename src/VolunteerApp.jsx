@@ -257,7 +257,8 @@ export default function VolunteerApp({ onLogoutToGuest }) {
     let retryTimer;
 
     const connect = () => {
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {

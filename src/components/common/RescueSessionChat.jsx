@@ -90,7 +90,8 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
   useEffect(() => {
     if (!currentUser || !targetUser?.id) return;
 
-    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:5000`;
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
 
@@ -260,7 +261,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
       transition: 'all 0.25s ease',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%',
+      height: isMobile ? '420px' : '500px',
       flex: 1
     }}>
       {/* Header */}
