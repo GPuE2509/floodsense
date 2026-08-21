@@ -340,6 +340,20 @@ export default function VolunteerNotifications() {
     }
   }, [currentUser]);
 
+  // Reload notifications list when rescue status updates
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleRescueUpdate = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('rescue-update', handleRescueUpdate);
+    window.addEventListener('rescue-status-update', handleRescueUpdate);
+    return () => {
+      window.removeEventListener('rescue-update', handleRescueUpdate);
+      window.removeEventListener('rescue-status-update', handleRescueUpdate);
+    };
+  }, [currentUser]);
+
   // Load conversation list once currentUser is loaded
   useEffect(() => {
     if (!currentUser) return;
@@ -444,139 +458,152 @@ export default function VolunteerNotifications() {
   // Initialize WebSocket connection
   useEffect(() => {
     if (!currentUser) return;
+    let socket = null;
+    let retryTimer = null;
 
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
-    const socket = new WebSocket(wsUrl);
-    wsRef.current = socket;
+    const connect = () => {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
+      socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
 
-    socket.onopen = () => {
-      console.log('Volunteer WebSocket connected');
-      socket.send(JSON.stringify({
-        type: 'register',
-        userId: currentUser._id,
-        userName: currentUser.full_name,
-        role: currentUser.role,
-        avatarUrl: currentUser.avatar_url || ''
-      }));
-    };
+      socket.onopen = () => {
+        console.log('Volunteer WebSocket connected');
+        socket.send(JSON.stringify({
+          type: 'register',
+          userId: currentUser._id,
+          userName: currentUser.full_name,
+          role: currentUser.role,
+          avatarUrl: currentUser.avatar_url || ''
+        }));
+      };
 
-    socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          console.log('[WS Frontend Debug] Raw message received:', msg);
 
-        // ── Real-time in-app notification pushed from server ──
-        if (msg.type === 'notification' && msg.notification) {
-          const n = msg.notification;
-          const mappedType = mapNotificationType(n.type);
-          const newNotif = {
-            id: n._id || `ws-notif-${Date.now()}`,
-            title: n.title || 'Notification',
-            body: n.body || '',
-            time: n.created_at
-              ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
-                ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-              : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-            type: mappedType,
-            read: false,
-            metadata: n.metadata,
-            reference_type: n.reference_type,
-            reference_id: n.reference_id
-          };
-
-          setNotifications(prev => {
-            if (prev.some(x => x.id === newNotif.id)) return prev;
-            return [newNotif, ...prev];
-          });
-
-          if (n.type === 'Emergency_SOS_Nearby' || n.reference_type === 'rescue_sessions') {
-            window.dispatchEvent(new CustomEvent('rescue-update'));
-          }
-
-          const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved', 'sos', 'critical'];
-          if (forumTypes.includes(mappedType)) {
-            setToast({
-              id: `notif-toast-${Date.now()}`,
-              title: n.title,
-              body: n.body,
-              isNotification: true,
-              webUrl: '/missions',
-              referenceId: n.reference_id
-            });
-          }
-          return;
-        }
-
-        if (msg.type === 'chat') {
-          const threadId = msg.groupId || msg.senderId;
-          const isViewingThisChat = activeTabRef.current === 'chat' && String(threadId) === String(activeConvRef.current?.id);
-
-          // Add to notifications list if not currently active conversation
-          if (!isViewingThisChat) {
+          // ── Real-time in-app notification pushed from server ──
+          if (msg.type === 'notification' && msg.notification) {
+            console.log('[WS Frontend Debug] Received notification event:', msg.notification);
+            const n = msg.notification;
+            const mappedType = mapNotificationType(n.type);
             const newNotif = {
-              id: `chat-${Date.now()}`,
-              threadId: threadId,
-              title: `New message from ${msg.senderName}`,
-              body: msg.text,
-              time: msg.time,
-              type: 'chat',
-              read: false
+              id: n._id || `ws-notif-${Date.now()}`,
+              title: n.title || 'Notification',
+              body: n.body || '',
+              time: n.created_at
+                ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+                  ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+                : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              type: mappedType,
+              read: false,
+              metadata: n.metadata,
+              reference_type: n.reference_type,
+              reference_id: n.reference_id
             };
-            setNotifications(prev => [newNotif, ...prev]);
 
-            setToast({
-              id: `chat-toast-${Date.now()}`,
-              title: `New message from ${msg.senderName}`,
-              body: msg.text,
-              senderId: threadId,
-              senderName: msg.senderName,
-              senderRole: msg.senderRole,
+            setNotifications(prev => {
+              if (prev.some(x => x.id === newNotif.id)) return prev;
+              return [newNotif, ...prev];
             });
-          }
-          
-          setConvList(convs => {
-            const exists = convs.some(c => c.id === threadId);
-            if (!exists) {
-              const newConv = {
-                id: threadId,
-                name: msg.senderName,
-                role: msg.senderRole || "Volunteer",
-                avatar: msg.senderName ? msg.senderName.substring(0, 2).toUpperCase() : "V",
-                avatar_url: msg.senderAvatarUrl || '',
-                color: 'var(--red-400)',
-                lastMsg: msg.text,
-                time: msg.time,
-                unread: isViewingThisChat ? 0 : 1,
-                online: true
-              };
-              return [newConv, ...convs];
+
+            if (n.type === 'Emergency_SOS_Nearby' || n.reference_type === 'rescue_sessions') {
+              window.dispatchEvent(new CustomEvent('rescue-update'));
             }
-            return convs.map(c => c.id === threadId ? { ...c, lastMsg: msg.text, time: msg.time, avatar_url: msg.senderAvatarUrl || c.avatar_url || '', unread: isViewingThisChat ? 0 : c.unread + 1 } : c);
-          });
 
-          setMessages(prev => ({
-            ...prev,
-            [threadId]: [...(prev[threadId] || []), {
-              id: Date.now(),
-              from: 'them',
-              senderName: msg.senderName,
-              senderAvatarUrl: msg.senderAvatarUrl || '',
-              text: msg.text,
-              time: msg.time
-            }]
-          }));
+            const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved', 'sos', 'critical'];
+            if (forumTypes.includes(mappedType)) {
+              setToast({
+                id: `notif-toast-${Date.now()}`,
+                title: n.title,
+                body: n.body,
+                isNotification: true,
+                webUrl: '/missions',
+                referenceId: n.reference_id
+              });
+            }
+            return;
+          }
+
+          if (msg.type === 'chat') {
+            const threadId = msg.groupId || msg.senderId;
+            const isViewingThisChat = activeTabRef.current === 'chat' && String(threadId) === String(activeConvRef.current?.id);
+
+            // Add to notifications list if not currently active conversation
+            if (!isViewingThisChat) {
+              const newNotif = {
+                id: `chat-${Date.now()}`,
+                threadId: threadId,
+                title: `New message from ${msg.senderName}`,
+                body: msg.text,
+                time: msg.time,
+                type: 'chat',
+                read: false
+              };
+              setNotifications(prev => [newNotif, ...prev]);
+
+              setToast({
+                id: `chat-toast-${Date.now()}`,
+                title: `New message from ${msg.senderName}`,
+                body: msg.text,
+                senderId: threadId,
+                senderName: msg.senderName,
+                senderRole: msg.senderRole,
+              });
+            }
+            
+            setConvList(convs => {
+              const exists = convs.some(c => c.id === threadId);
+              if (!exists) {
+                const newConv = {
+                  id: threadId,
+                  name: msg.senderName,
+                  role: msg.senderRole || "Volunteer",
+                  avatar: msg.senderName ? msg.senderName.substring(0, 2).toUpperCase() : "V",
+                  avatar_url: msg.senderAvatarUrl || '',
+                  color: 'var(--red-400)',
+                  lastMsg: msg.text,
+                  time: msg.time,
+                  unread: isViewingThisChat ? 0 : 1,
+                  online: true
+                };
+                return [newConv, ...convs];
+              }
+              return convs.map(c => c.id === threadId ? { ...c, lastMsg: msg.text, time: msg.time, avatar_url: msg.senderAvatarUrl || c.avatar_url || '', unread: isViewingThisChat ? 0 : c.unread + 1 } : c);
+            });
+
+            setMessages(prev => ({
+              ...prev,
+              [threadId]: [...(prev[threadId] || []), {
+                id: Date.now(),
+                from: 'them',
+                senderName: msg.senderName,
+                senderAvatarUrl: msg.senderAvatarUrl || '',
+                text: msg.text,
+                time: msg.time
+              }]
+            }));
+          }
+        } catch (err) {
+          console.error('Error parsing WS message:', err);
         }
-      } catch (err) {
-        console.error('Error parsing WS message:', err);
-      }
+      };
+
+      socket.onclose = () => {
+        console.log('Volunteer WebSocket disconnected, retrying in 5s...');
+        retryTimer = setTimeout(connect, 5000);
+      };
     };
 
-    socket.onclose = () => {
-      console.log('Volunteer WebSocket disconnected');
-    };
+    connect();
 
     return () => {
-      socket.close();
+      if (socket) {
+        socket.onclose = null;
+        socket.close();
+      }
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [currentUser?._id]);
 

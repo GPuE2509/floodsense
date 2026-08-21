@@ -351,6 +351,20 @@ export default function UserNotifications() {
     }
   }, [currentUser]);
 
+  // Reload notifications list when rescue status updates
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleRescueUpdate = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('rescue-update', handleRescueUpdate);
+    window.addEventListener('rescue-status-update', handleRescueUpdate);
+    return () => {
+      window.removeEventListener('rescue-update', handleRescueUpdate);
+      window.removeEventListener('rescue-status-update', handleRescueUpdate);
+    };
+  }, [currentUser]);
+
   // Load conversation list once currentUser is loaded
   useEffect(() => {
     if (!currentUser) return;
@@ -482,6 +496,7 @@ export default function UserNotifications() {
 
           // ── Real-time in-app notification pushed from server ──
           if (msg.type === 'notification' && msg.notification) {
+            console.log('[WS Frontend Debug] Received notification event:', msg.notification);
             const n = msg.notification;
             const mappedType = mapNotificationType(n.type);
             const newNotif = {
