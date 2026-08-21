@@ -157,7 +157,7 @@ export default function ManagerApp({ onLogoutToGuest, roleRequests, onApproveReq
     <>
       <AnimatedBackground />
       <MobileSidebarToggle />
-      <div className="app-layout" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="app-layout" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <ManagerSidebar
           activePage={activePage}
           onNavigate={handleNavigate}

@@ -4,7 +4,7 @@
  * Easily switch BASE_URL to connect to your real Backend Server.
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
+const BASE_URL = (import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com') + '/api';
 
 let isRefreshing = false;
 let refreshQueue = [];
