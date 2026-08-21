@@ -11,7 +11,8 @@ import { apiService } from '../../services/apiService';
 
 // ── AI Score Badge ───────────────────────────────────────────────────────────
 
-function AiScoreBadge({ score }) {
+function AiScoreBadge({ score, reportType }) {
+  if (reportType && reportType !== 'flood') return null;
   const color = score >= 50 ? 'var(--green-400)' : 'var(--red-400)';
   const bg = score >= 50 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
   return (
@@ -241,8 +242,7 @@ export default function UserReports() {
   const fetchReports = async () => {
     if (reports.length === 0) setIsLoadingReports(true);
     try {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/incident-reports`);
+      const res = await fetch('https://floodsenseapi.onrender.com/api/incident-reports');
       const data = await res.json();
       if (data.success) {
         setReports(data.data);
@@ -351,7 +351,8 @@ export default function UserReports() {
         
         const formData = new FormData();
         formData.append('image', file);
-        const apiRes = await fetch('http://localhost:5002/api/predict', {
+        const aiServerUrl = import.meta.env.VITE_AI_API_URL || 'http://localhost:5002';
+        const apiRes = await fetch(`${aiServerUrl}/api/predict`, {
           method: 'POST',
           body: formData,
         });
@@ -433,7 +434,7 @@ export default function UserReports() {
 
   let aiScore = 0;
   let isApprovedByAi = false;
-  if (aiResult) {
+  if (reportType === 'flood' && aiResult) {
     aiScore = Math.round(aiResult.probability_flooded * 100);
     isApprovedByAi = aiResult.probability_flooded >= aiResult.threshold;
   }
@@ -479,14 +480,13 @@ export default function UserReports() {
         lng: gps?.lng || null,
         lat: gps?.lat || null,
         report_type: reportType,
-        ai_confidence_score: aiScore / 100,
-        is_approved_by_ai: isApprovedByAi,
+        ai_confidence_score: reportType === 'flood' ? aiScore / 100 : null,
+        is_approved_by_ai: reportType === 'flood' ? isApprovedByAi : false,
         duration_hours: durationHours,
         severity: form.severity,
       };
 
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/incident-reports`, {
+      const res = await fetch('https://floodsenseapi.onrender.com/api/incident-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -847,7 +847,9 @@ export default function UserReports() {
               {submitted && (
                 <div className="alert-banner success">
                   <CheckCircle size={14} color="var(--green-400)" />
-                  <span style={{ fontWeight: 600, color: 'var(--green-400)' }}>AI is reviewing...</span>
+                  <span style={{ fontWeight: 600, color: 'var(--green-400)' }}>
+                    {reportType === 'flood' ? 'AI is reviewing...' : 'Report submitted! Waiting for manager review.'}
+                  </span>
                 </div>
               )}
             </div>
@@ -957,7 +959,7 @@ export default function UserReports() {
                         })()}
                         {severityBadge(report.severity)}
                         {statusBadge[statusKey] || statusBadge.pending}
-                        <AiScoreBadge score={report.ai_confidence_score ? Math.round(report.ai_confidence_score * 100) : 0} />
+                        {report.report_type === 'flood' && <AiScoreBadge score={report.ai_confidence_score ? Math.round(report.ai_confidence_score * 100) : 0} reportType={report.report_type} />}
                       </div>
                       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
@@ -1108,7 +1110,7 @@ export default function UserReports() {
                             );
                           })()}
                           {severityBadge(report.severity)}
-                          <AiScoreBadge score={report.ai_confidence_score ? Math.round(report.ai_confidence_score * 100) : 0} />
+                          <AiScoreBadge score={report.ai_confidence_score ? Math.round(report.ai_confidence_score * 100) : 0} reportType={report.report_type} />
                           {myVote === 'confirm' && <span className="badge badge-green" style={{ fontSize: '0.62rem' }}>You: Still exists</span>}
                           {myVote === 'deny' && <span className="badge badge-red" style={{ fontSize: '0.62rem' }}>You: Not anymore</span>}
                           {myVote === 'false' && <span className="badge badge-gray" style={{ fontSize: '0.62rem' }}>You: Wrong report</span>}
@@ -1279,7 +1281,7 @@ export default function UserReports() {
                   if (selectedReport.lifecycle_status === 'Archived') statusKey = 'archived';
                   return statusBadge[statusKey] || statusBadge.pending;
                 })()}
-                <AiScoreBadge score={selectedReport.ai_confidence_score ? Math.round(selectedReport.ai_confidence_score * 100) : 0} />
+                <AiScoreBadge score={selectedReport.ai_confidence_score ? Math.round(selectedReport.ai_confidence_score * 100) : 0} reportType={selectedReport.report_type} />
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
                 <strong>Location:</strong> {selectedReport.title}

@@ -32,7 +32,7 @@ export default function TopBar({ activePage, collapsed, onOpenProfile, onNavigat
     let ws;
     let timer;
     const connectWs = () => {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com/api';
       const wsUrl = backendUrl.replace('http', 'ws').replace('/api', '');
       ws = new WebSocket(wsUrl);
       ws.onmessage = (event) => {
@@ -109,13 +109,14 @@ export default function TopBar({ activePage, collapsed, onOpenProfile, onNavigat
           </div>
         </div>
 
-        {/* Live clock block */}
-        <div style={{
+        {/* Live clock block — hidden on mobile via .topbar-clock CSS */}
+        <div className="topbar-clock" style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '5px 14px',
           background: 'rgba(61,125,176,0.08)',
           border: '1px solid rgba(120,150,175,0.25)',
           borderRadius: 'var(--r-md)',
+          flexShrink: 0,
         }}>
           <div className="live-indicator">
             <div className="live-dot" />
@@ -131,13 +132,13 @@ export default function TopBar({ activePage, collapsed, onOpenProfile, onNavigat
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <div className="topbar-user" role="button" tabIndex={0} onClick={onOpenProfile} style={{ cursor: 'pointer' }}>
-            <div className="user-avatar" style={{ ...avatarStyle }}>
+            <div className="user-avatar" style={{ ...avatarStyle, flexShrink: 0 }}>
               {avatarUrl ? '' : avatarInitial}
             </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', fontFamily: 'var(--font-display)', letterSpacing: '0.02em' }}>{userName || 'Admin'}</div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'var(--font-display)', letterSpacing: '0.02em', maxWidth: 120 }}>{userName || 'Admin'}</div>
               <div style={{ fontSize: '0.6rem', color: '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>Super Admin</div>
             </div>
           </div>

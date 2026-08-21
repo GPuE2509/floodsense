@@ -231,13 +231,14 @@ export default function ManagerGuidelines() {
       <div style={{ marginBottom: '40px' }}>
         <h3 style={{ color: 'var(--text-primary)', marginBottom: '16px', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.5px' }}>{title}</h3>
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-bright)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-bright)' }}>
-                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</th>
-                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</th>
-                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</th>
-                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</th>
+                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Type</th>
+                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Title</th>
+                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Details</th>
+                <th style={{ padding: '16px', color: 'var(--text-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -246,10 +247,10 @@ export default function ManagerGuidelines() {
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {g.type === 'hotline' ? <Phone size={16} color="var(--blue-400)" /> : <Shield size={16} color="var(--green-400)" />}
-                      <span style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--text-secondary)' }}>{g.type}</span>
+                      <span style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{g.type}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-primary)', maxWidth: '250px' }}>
+                  <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-primary)', minWidth: 140, maxWidth: '250px' }}>
                     <div style={{ 
                       overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', 
                       WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.4 
@@ -257,7 +258,7 @@ export default function ManagerGuidelines() {
                       {g.title}
                     </div>
                   </td>
-                  <td style={{ padding: '16px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <td style={{ padding: '16px', fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: 160 }}>
                     {g.type === 'hotline' ? (
                       <div>
                         <div style={{ marginBottom: g.description ? '4px' : '0' }}><strong style={{ color: 'var(--text-secondary)' }}>Phone:</strong> {g.phone_number}</div>
@@ -306,6 +307,7 @@ export default function ManagerGuidelines() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     );
@@ -319,9 +321,9 @@ export default function ManagerGuidelines() {
   );
 
   return (
-    <div className="page-enter" style={{ padding: '32px', maxWidth: 1100, margin: '0 auto', color: 'var(--text-primary)' }}>
+    <div className="page-enter" style={{ padding: '24px', maxWidth: 1100, margin: '0 auto', color: 'var(--text-primary)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>Manage Guidelines</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Configure emergency hotlines and survival tips</p>

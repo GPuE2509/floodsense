@@ -83,8 +83,14 @@ export default function DeviceLifecycleModal({ device, onClose }) {
   ];
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999, padding: '20px', backgroundColor: 'rgba(8, 13, 22, 0.85)', backdropFilter: 'blur(8px)' }}>
+    <div className="modal-overlay dlm-overlay" onClick={onClose}>
       <style>{`
+        .dlm-overlay {
+          zIndex: 9999;
+          padding: 20px;
+          background-color: rgba(8, 13, 22, 0.85);
+          backdrop-filter: blur(8px);
+        }
         .dlm-modal {
           max-width: 960px;
           width: 100%;
@@ -99,29 +105,122 @@ export default function DeviceLifecycleModal({ device, onClose }) {
         }
         .dlm-tabs-nav {
           display: flex;
-          gap: 30px;
+          gap: 24px;
           overflow-x: auto;
           scrollbar-width: none;
         }
         .dlm-tabs-nav::-webkit-scrollbar { display: none; }
-        @media (max-width: 600px) {
+        .dlm-header {
+          padding: 20px 24px;
+          background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+          border-bottom: 1px solid #1e293b;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .dlm-content {
+          flex: 1;
+          padding: 24px;
+          overflow-y: auto;
+          background: radial-gradient(circle at top right, rgba(15, 23, 42, 0.9) 0%, rgba(8, 13, 22, 0.95) 100%);
+        }
+        .dlm-cycle-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          box-sizing: border-box;
+          max-width: 100%;
+          overflow: hidden;
+        }
+        .dlm-speed-hero {
+          position: relative;
+          border-radius: 16px;
+          padding: 24px 28px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 20px;
+          box-sizing: border-box;
+          max-width: 100%;
+          overflow: hidden;
+        }
+        .dlm-table-wrap {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 640px) {
+          .dlm-overlay {
+            padding: 6px !important;
+          }
           .dlm-modal {
-            border-radius: 10px;
-            height: 95vh;
+            border-radius: 10px !important;
+            height: 96vh !important;
+            max-width: 100% !important;
+          }
+          .dlm-header {
+            padding: 14px 14px !important;
+            gap: 10px !important;
+          }
+          .dlm-tabs-nav {
+            gap: 10px !important;
+            padding: 0 4px !important;
+          }
+          .dlm-tabs-nav button {
+            font-size: 0.8rem !important;
+            padding: 10px 2px !important;
+            white-space: nowrap !important;
+          }
+          .dlm-content {
+            padding: 14px 10px !important;
+          }
+          .dlm-speed-hero {
+            padding: 16px 14px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 14px !important;
+          }
+          .dlm-speed-val {
+            font-size: 2.4rem !important;
+          }
+          .dlm-speed-hero > div:last-child {
+            align-items: flex-start !important;
+            width: 100% !important;
+          }
+          .dlm-cycle-card {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 14px 12px !important;
+          }
+          .dlm-cycle-time {
+            margin-left: 0 !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            font-size: 0.78rem !important;
+          }
+          .dlm-cycle-duration {
+            margin-left: 0 !important;
+            font-size: 0.75rem !important;
+          }
+          .dlm-cycle-card > div:last-child {
+            align-items: flex-start !important;
+            width: 100% !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            margin-top: 6px !important;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 8px !important;
           }
         }
       `}</style>
       <div className="modal dlm-modal" onClick={e => e.stopPropagation()}>
         
         {/* Header - Redesigned to look premium */}
-        <div style={{
-          padding: '20px 24px',
-          background: 'linear-gradient(90deg, #0f172a 0%, #1e293b 100%)',
-          borderBottom: '1px solid #1e293b',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16
-        }}>
+        <div className="dlm-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ padding: 10, background: 'linear-gradient(135deg, rgba(34,211,238,0.2) 0%, rgba(59,130,246,0.2) 100%)', borderRadius: 10, border: '1px solid rgba(34,211,238,0.4)', boxShadow: '0 0 15px rgba(34,211,238,0.2)' }}>
@@ -186,7 +285,7 @@ export default function DeviceLifecycleModal({ device, onClose }) {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, padding: '24px', overflowY: 'auto', background: 'radial-gradient(circle at top right, rgba(15, 23, 42, 0.9) 0%, rgba(8, 13, 22, 0.95) 100%)' }}>
+        <div className="dlm-content">
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             
             {/* Tab 1: History */}
@@ -261,6 +360,7 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                       <div
                         key={c.id}
                         onClick={() => setSelectedCycle(c)}
+                        className="dlm-cycle-card"
                         style={{
                           background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)',
                           border: '1px solid #334155',
@@ -268,9 +368,6 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                           padding: 16,
                           cursor: 'pointer',
                           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#38bdf8'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 18px -5px rgba(56, 189, 248, 0.15)'; }}
@@ -283,10 +380,10 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                             </div>
                             <strong style={{ color: '#f8fafc', fontSize: '1.05rem', letterSpacing: 0.2 }}>{c.cycle_name}</strong>
                           </div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8, marginLeft: 36 }}>
+                          <div className="dlm-cycle-time" style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8, marginLeft: 36, flexWrap: 'wrap' }}>
                             <span style={{ color: '#64748b' }}>From:</span> <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{c.start_time}</span> &nbsp;➝&nbsp; <span style={{ color: '#64748b' }}>To:</span> <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{c.end_time}</span>
                           </div>
-                          <div style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600, marginLeft: 36 }}>
+                          <div className="dlm-cycle-duration" style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600, marginLeft: 36 }}>
                             ⏱️ Duration: <span style={{ color: '#94a3b8' }}>{c.duration}</span>
                           </div>
                         </div>
@@ -331,19 +428,11 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                 ) : (
                   <>
                     {/* Hero Speed Display Card */}
-                    <div style={{
-                      position: 'relative',
+                    <div className="dlm-speed-hero" style={{
                       background: speedData.is_warning
                         ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(153,27,27,0.25) 100%)'
                         : 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(15,23,42,0.8) 100%)',
                       border: `1px solid ${speedData.is_warning ? '#ef4444' : 'rgba(249,115,22,0.4)'}`,
-                      borderRadius: 16,
-                      padding: '28px 32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: 20,
                       boxShadow: speedData.is_warning ? '0 0 30px rgba(239,68,68,0.2)' : '0 10px 25px rgba(0,0,0,0.3)'
                     }}>
                       <div>
@@ -351,7 +440,7 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                           <Zap size={16} color={speedData.is_warning ? '#ef4444' : '#fb923c'} /> Recorded Rising Speed
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                          <span style={{ fontSize: '3.6rem', fontWeight: 900, color: speedData.is_warning ? '#ef4444' : '#fb923c', lineHeight: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                          <span className="dlm-speed-val" style={{ fontSize: '3.6rem', fontWeight: 900, color: speedData.is_warning ? '#ef4444' : '#fb923c', lineHeight: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                             {speedData.current_speed}
                           </span>
                           <span style={{ fontSize: '1.3rem', fontWeight: 700, color: '#cbd5e1' }}>cm/min</span>
@@ -390,8 +479,8 @@ export default function DeviceLifecycleModal({ device, onClose }) {
                         </span>
                       </div>
 
-                      <div style={{ overflowY: 'auto', flex: 1, maxHeight: '350px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
+                      <div className="dlm-table-wrap" style={{ overflowY: 'auto', flex: 1, maxHeight: '350px' }}>
+                        <table style={{ width: '100%', minWidth: 440, borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
                           <thead>
                             <tr style={{ background: 'rgba(30,41,59,0.5)', color: '#94a3b8', borderBottom: '2px solid #334155', position: 'sticky', top: 0, zIndex: 1 }}>
                               <th style={{ padding: '14px 24px', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: 0.5 }}>Timestamp</th>

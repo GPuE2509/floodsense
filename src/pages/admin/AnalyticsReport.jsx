@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
-// VITE_API_URL is the server root (e.g. http://localhost:5000), append /api to match backend routes
-const _serverRoot = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// VITE_API_URL is the server root (e.g. https://floodsenseapi.onrender.com), append /api to match backend routes
+const _serverRoot = import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com';
 const BASE_URL = _serverRoot.endsWith('/api') ? _serverRoot : `${_serverRoot}/api`;
 
 /* ──────────────────────────────────────

@@ -583,7 +583,7 @@ export default function ForumModeration() {
     fetchReportedCommentsRef.current();
 
     // Set up WebSocket for real-time forum updates with auto-reconnect
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+    const wsUrl = import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com';
     let ws;
     let reconnectTimeout;
 
@@ -1057,7 +1057,7 @@ export default function ForumModeration() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
         {[
           { label: "Posts", value: posts.length, color: 'var(--green-400)' },
           { label: "Reported Posts", value: reportedPosts.length, color: 'var(--red-400)' },
@@ -1065,9 +1065,9 @@ export default function ForumModeration() {
           { label: "Pinned Posts", value: posts.filter(p => p.isPinned).length, color: 'var(--blue-400)' },
           { label: "Pending Moderation", value: posts.filter(p => p.status === 'pending').length, color: 'var(--orange-400)' },
         ].map(s => (
-          <div key={s.label} className="card p-5 flex items-center gap-4">
+          <div key={s.label} className="card p-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, minWidth: 0 }}>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.value}</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>{s.label}</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', wordBreak: 'break-word' }}>{s.label}</div>
           </div>
         ))}
       </div>

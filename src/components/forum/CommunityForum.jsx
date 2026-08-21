@@ -244,7 +244,7 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
 
   useEffect(() => {
     // Set up WebSocket for real-time forum updates with auto-reconnect
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+    const wsUrl = import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com';
     let ws;
     let reconnectTimeout;
 

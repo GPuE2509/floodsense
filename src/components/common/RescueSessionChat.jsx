@@ -260,7 +260,7 @@ export default function RescueSessionChat({ targetUser, missionId, title, defaul
       transition: 'all 0.25s ease',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%',
+      height: isMobile ? '420px' : '500px',
       flex: 1
     }}>
       {/* Header */}

@@ -4,7 +4,7 @@ import {
   MapPin, Clock, Send, LifeBuoy, Plus, Trash2, Edit2,
   CheckCircle, Radio, Car, Crosshair, Building2, Pill,
   Heart, Phone, X, Save, Bell, Activity, Camera, Loader,
-  Bike, XCircle, Maximize, Minimize, Wrench, Star, ArrowLeft, MessageSquare, ChevronRight, Copy, User
+  Bike, XCircle, Maximize, Minimize, Wrench, Star, ArrowLeft, MessageSquare, ChevronRight, Copy, User, RefreshCw
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -827,6 +827,42 @@ export default function UserSOS() {
       setGpsLoading(false);
     }
   }, []);
+
+  const handleReloadGps = () => {
+    if (navigator.geolocation) {
+      setGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            address: `${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E · Live location determined`
+          });
+          setUserLat(pos.coords.latitude);
+          setUserLng(pos.coords.longitude);
+          setGpsApproved(true);
+          setGpsLoading(false);
+        },
+        (err) => {
+          console.warn('Geolocation access failed or denied. Using default coordinates.');
+          setCoords(prev => ({
+            ...prev,
+            address: 'Location permission denied. Please grant location access in your browser settings to send an SOS.'
+          }));
+          setGpsApproved(false);
+          setGpsLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    } else {
+      setCoords(prev => ({
+        ...prev,
+        address: 'Geolocation is not supported by your browser.'
+      }));
+      setGpsApproved(false);
+      setGpsLoading(false);
+    }
+  };
 
   // Listen for active rescue status updates via WebSocket events
   useEffect(() => {
@@ -1711,22 +1747,48 @@ export default function UserSOS() {
               border: `1px solid ${gpsApproved ? 'rgba(34,197,94,0.2)' : gpsLoading ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)'}`,
               borderRadius: 'var(--r-md)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                 {gpsLoading ? (
-                  <Loader size={16} color="var(--blue-400)" style={{ animation: 'spin 1.5s infinite linear' }} />
+                  <Loader size={16} color="var(--blue-400)" style={{ animation: 'spin 1.5s infinite linear', flexShrink: 0 }} />
                 ) : (
-                  <Crosshair size={16} color={gpsApproved ? 'var(--green-400)' : 'var(--red-400)'} style={{ animation: gpsLoading ? 'spin 3s infinite linear' : 'none' }} />
+                  <Crosshair size={16} color={gpsApproved ? 'var(--green-400)' : 'var(--red-400)'} style={{ flexShrink: 0 }} />
                 )}
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: gpsApproved ? 'var(--green-400)' : gpsLoading ? 'var(--blue-400)' : 'var(--red-400)' }}>
                     {gpsLoading ? 'GPS LOCATING...' : gpsApproved ? 'GPS location determined' : 'NO GPS LOCATION'}
                   </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>{coords.address}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{coords.address}</div>
                 </div>
               </div>
-              <span className={`badge ${gpsApproved ? 'badge-green' : gpsLoading ? 'badge-orange' : 'badge-red'}`} style={{ fontSize: '0.62rem', letterSpacing: '0.04em' }}>
-                {gpsLoading ? 'LOADING' : gpsApproved ? 'GPS ✓' : 'NO GPS ✕'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleReloadGps}
+                  disabled={gpsLoading}
+                  title="Reload GPS Location"
+                  style={{
+                    padding: '4px 10px',
+                    height: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    color: 'var(--cyan-400)',
+                    borderColor: 'rgba(6,182,212,0.3)',
+                    background: 'rgba(6,182,212,0.08)',
+                    borderRadius: 6,
+                    cursor: gpsLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <RefreshCw size={13} style={{ animation: gpsLoading ? 'spin 1s linear infinite' : 'none' }} />
+                  <span>{gpsLoading ? 'Locating...' : 'Reload GPS'}</span>
+                </button>
+                <span className={`badge ${gpsApproved ? 'badge-green' : gpsLoading ? 'badge-orange' : 'badge-red'}`} style={{ fontSize: '0.62rem', letterSpacing: '0.04em' }}>
+                  {gpsLoading ? 'LOADING' : gpsApproved ? 'GPS ✓' : 'NO GPS ✕'}
+                </span>
+              </div>
             </div>
 
             {/* Phone */}

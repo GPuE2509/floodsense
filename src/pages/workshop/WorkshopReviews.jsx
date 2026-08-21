@@ -98,7 +98,7 @@ export default function WorkshopReviews() {
     let ws;
     let timer;
     const connectWs = () => {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://floodsenseapi.onrender.com/api';
       const wsUrl = backendUrl.replace('http', 'ws').replace('/api', '');
       ws = new WebSocket(wsUrl);
       ws.onmessage = (event) => {
