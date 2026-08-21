@@ -155,7 +155,7 @@ export default function UserNotifications() {
           title: n.title || 'Notification',
           body: n.body || '',
           time: n.created_at ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '',
-          type: mapNotificationType(n.type),
+          type: mapNotificationType(n.type, n.reference_type),
           read: n.is_read || false,
           metadata: n.metadata,
           reference_type: n.reference_type,
@@ -191,7 +191,10 @@ export default function UserNotifications() {
     }
   };
 
-  const mapNotificationType = (backendType) => {
+  const mapNotificationType = (backendType, referenceType) => {
+    if (referenceType === 'rescue_sessions' && backendType !== 'Emergency_SOS_Contact') {
+      return 'critical';
+    }
     switch (backendType) {
       case 'Emergency_SOS_Contact':
         return 'Emergency_SOS_Contact';
@@ -498,7 +501,7 @@ export default function UserNotifications() {
           if (msg.type === 'notification' && msg.notification) {
             console.log('[WS Frontend Debug] Received notification event:', msg.notification);
             const n = msg.notification;
-            const mappedType = mapNotificationType(n.type);
+            const mappedType = mapNotificationType(n.type, n.reference_type);
             const newNotif = {
               id: n._id || `ws-notif-${Date.now()}`,
               title: n.title || 'Notification',
@@ -520,17 +523,14 @@ export default function UserNotifications() {
               return [newNotif, ...prev];
             });
 
-            // Show a transient toast for forum-type notifications
-            const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved'];
-            if (forumTypes.includes(mappedType)) {
-              setToast({
-                id: `notif-toast-${Date.now()}`,
-                title: n.title,
-                body: n.body,
-                isNotification: true,
-                webUrl: n.metadata?.web_url || '/forum',
-              });
-            }
+            // Show a transient toast for all types of notifications
+            setToast({
+              id: `notif-toast-${Date.now()}`,
+              title: n.title,
+              body: n.body,
+              isNotification: true,
+              webUrl: n.metadata?.web_url || (n.reference_type === 'rescue_sessions' ? '/sos' : '/notifications'),
+            });
             return;
           }
 

@@ -151,7 +151,7 @@ export default function VolunteerNotifications() {
           title: n.title || 'Notification',
           body: n.body || '',
           time: n.created_at ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '',
-          type: mapNotificationType(n.type),
+          type: mapNotificationType(n.type, n.reference_type),
           read: n.is_read || false,
           metadata: n.metadata,
           reference_type: n.reference_type,
@@ -166,7 +166,10 @@ export default function VolunteerNotifications() {
     }
   };
 
-  const mapNotificationType = (backendType) => {
+  const mapNotificationType = (backendType, referenceType) => {
+    if (referenceType === 'rescue_sessions' && backendType !== 'Emergency_SOS_Contact') {
+      return 'critical';
+    }
     switch (backendType) {
       case 'Emergency_SOS_Contact':
         return 'Emergency_SOS_Contact';
@@ -487,7 +490,7 @@ export default function VolunteerNotifications() {
           if (msg.type === 'notification' && msg.notification) {
             console.log('[WS Frontend Debug] Received notification event:', msg.notification);
             const n = msg.notification;
-            const mappedType = mapNotificationType(n.type);
+            const mappedType = mapNotificationType(n.type, n.reference_type);
             const newNotif = {
               id: n._id || `ws-notif-${Date.now()}`,
               title: n.title || 'Notification',
@@ -512,17 +515,15 @@ export default function VolunteerNotifications() {
               window.dispatchEvent(new CustomEvent('rescue-update'));
             }
 
-            const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved', 'sos', 'critical'];
-            if (forumTypes.includes(mappedType)) {
-              setToast({
-                id: `notif-toast-${Date.now()}`,
-                title: n.title,
-                body: n.body,
-                isNotification: true,
-                webUrl: '/missions',
-                referenceId: n.reference_id
-              });
-            }
+            // Show a transient toast for all types of notifications
+            setToast({
+              id: `notif-toast-${Date.now()}`,
+              title: n.title,
+              body: n.body,
+              isNotification: true,
+              webUrl: n.reference_type === 'rescue_sessions' ? '/missions' : '/notifications',
+              referenceId: n.reference_id
+            });
             return;
           }
 
