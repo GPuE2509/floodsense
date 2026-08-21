@@ -204,6 +204,7 @@ export default function VolunteerApp({ onLogoutToGuest }) {
   };
 
   const [pendingSOSCount, setPendingSOSCount] = useState(0);
+  const [globalToast, setGlobalToast] = useState(null);
 
   const fetchSOSCount = async () => {
     try {
@@ -386,6 +387,7 @@ export default function VolunteerApp({ onLogoutToGuest }) {
     }
     : {};
 
+
   return (
     <>
       <AnimatedBackground />
@@ -418,6 +420,72 @@ export default function VolunteerApp({ onLogoutToGuest }) {
           </div>
         </main>
       </div>
+      {globalToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 9999,
+          width: 360,
+          background: 'rgba(18, 29, 40, 0.95)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border-default, rgba(120,150,175,0.3))',
+          boxShadow: 'var(--shadow-lg), 0 0 20px rgba(69, 179, 192, 0.2)',
+          borderRadius: 'var(--r-md)',
+          padding: '14px 16px',
+          display: 'flex',
+          gap: 12,
+          animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}>
+          <style>{`
+            @keyframes slideIn {
+              from { transform: translateX(120px); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: globalToast.isNotification ? 'rgba(234,179,8,0.1)' : 'rgba(6,182,212,0.1)',
+            border: globalToast.isNotification ? '1px solid rgba(234,179,8,0.3)' : '1px solid rgba(6,182,212,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            {globalToast.isNotification ? (
+              <Bell size={16} color="#f59e0b" />
+            ) : (
+              <MessageSquare size={16} color="var(--cyan-400)" />
+            )}
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <span style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-primary)' }}>{globalToast.title}</span>
+              <button 
+                onClick={() => setGlobalToast(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>{globalToast.body}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ padding: '2px 8px', fontSize: '0.68rem', height: 22 }}
+                onClick={() => {
+                  setGlobalToast(null);
+                  handleNavigate('user-notifications');
+                }}
+              >
+                {globalToast.isNotification ? 'View' : 'Reply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
