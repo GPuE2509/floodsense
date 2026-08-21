@@ -428,7 +428,7 @@ export default function VolunteerNotifications() {
       }
     };
     loadHistory();
-  }, [currentUser, activeConv?.id]);
+  }, [currentUser?._id, activeConv?.id]);
 
   const activeConvRef = useRef(activeConv);
   const activeTabRef = useRef(activeTab);
@@ -509,7 +509,7 @@ export default function VolunteerNotifications() {
 
         if (msg.type === 'chat') {
           const threadId = msg.groupId || msg.senderId;
-          const isViewingThisChat = activeTabRef.current === 'chat' && threadId === activeConvRef.current?.id;
+          const isViewingThisChat = activeTabRef.current === 'chat' && String(threadId) === String(activeConvRef.current?.id);
 
           // Add to notifications list if not currently active conversation
           if (!isViewingThisChat) {
@@ -578,7 +578,7 @@ export default function VolunteerNotifications() {
     return () => {
       socket.close();
     };
-  }, [currentUser]);
+  }, [currentUser?._id]);
 
   // Debounced search for find friend API
   useEffect(() => {
@@ -704,29 +704,18 @@ export default function VolunteerNotifications() {
 
 
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim() || !activeConv) return;
+    const textToSend = inputText.trim();
+    setInputText('');
     const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-    // Send through WebSocket if connected
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
-      wsRef.current.send(JSON.stringify({
-        type: 'chat',
-        senderId: currentUser._id,
-        senderName: currentUser.full_name,
-        senderRole: currentUser.role,
-        targetId: activeConv.id,
-        text: inputText.trim(),
-        time: timeStr
-      }));
-    }
 
     const newMsg = {
       id: Date.now(),
       from: 'me',
       senderName: currentUser?.full_name || 'Me',
       senderAvatarUrl: currentUser?.avatar_url || '',
-      text: inputText.trim(),
+      text: textToSend,
       time: timeStr,
       read: false,
     };
@@ -734,7 +723,26 @@ export default function VolunteerNotifications() {
       ...prev,
       [activeConv.id]: [...(prev[activeConv.id] || []), newMsg],
     }));
-    setInputText('');
+
+    try {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
+        wsRef.current.send(JSON.stringify({
+          type: 'chat',
+          senderId: currentUser._id,
+          senderName: currentUser.full_name,
+          senderRole: currentUser.role,
+          targetId: activeConv.id,
+          text: textToSend,
+          time: timeStr
+        }));
+      }
+      await apiService.post('/chat/send', {
+        targetId: activeConv.id,
+        text: textToSend
+      });
+    } catch (err) {
+      console.error('Failed to send message via API:', err);
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -759,21 +767,9 @@ export default function VolunteerNotifications() {
     }
   };
 
-  const sendImageMessage = (imageUrl) => {
+  const sendImageMessage = async (imageUrl) => {
     const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const imageMsgText = `[IMAGE]:${imageUrl}`;
-
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
-      wsRef.current.send(JSON.stringify({
-        type: 'chat',
-        senderId: currentUser._id,
-        senderName: currentUser.full_name,
-        senderRole: currentUser.role,
-        targetId: activeConv.id,
-        text: imageMsgText,
-        time: timeStr
-      }));
-    }
 
     const newMsg = {
       id: Date.now(),
@@ -788,6 +784,26 @@ export default function VolunteerNotifications() {
       ...prev,
       [activeConv.id]: [...(prev[activeConv.id] || []), newMsg],
     }));
+
+    try {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
+        wsRef.current.send(JSON.stringify({
+          type: 'chat',
+          senderId: currentUser._id,
+          senderName: currentUser.full_name,
+          senderRole: currentUser.role,
+          targetId: activeConv.id,
+          text: imageMsgText,
+          time: timeStr
+        }));
+      }
+      await apiService.post('/chat/send', {
+        targetId: activeConv.id,
+        text: imageMsgText
+      });
+    } catch (err) {
+      console.error('Failed to send image message via API:', err);
+    }
   };
 
   // Start direct chat with user from directory

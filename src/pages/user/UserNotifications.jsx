@@ -440,7 +440,7 @@ export default function UserNotifications() {
       }
     };
     loadHistory();
-  }, [currentUser, activeConv?.id]);
+  }, [currentUser?._id, activeConv?.id]);
 
   const activeConvRef = useRef(activeConv);
   const activeTabRef = useRef(activeTab);
@@ -456,141 +456,151 @@ export default function UserNotifications() {
   // Initialize WebSocket connection
   useEffect(() => {
     if (!currentUser) return;
+    let socket = null;
+    let retryTimer = null;
 
-    // Use current location origin to determine WS port, default to localhost:5000
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
-    const socket = new WebSocket(wsUrl);
-    wsRef.current = socket;
+    const connect = () => {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const wsUrl = isLocal ? 'ws://localhost:5000' : (import.meta.env.VITE_WS_URL || 'wss://floodsenseapi.onrender.com');
+      socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
 
-    socket.onopen = () => {
-      console.log('User WebSocket connected');
-      socket.send(JSON.stringify({
-        type: 'register',
-        userId: currentUser._id,
-        userName: currentUser.full_name,
-        role: currentUser.role,
-        avatarUrl: currentUser.avatar_url || ''
-      }));
-    };
+      socket.onopen = () => {
+        console.log('User WebSocket connected');
+        socket.send(JSON.stringify({
+          type: 'register',
+          userId: currentUser._id,
+          userName: currentUser.full_name,
+          role: currentUser.role,
+          avatarUrl: currentUser.avatar_url || ''
+        }));
+      };
 
-    socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
 
-        // ── Real-time in-app notification pushed from server ──
-        if (msg.type === 'notification' && msg.notification) {
-          const n = msg.notification;
-          const mappedType = mapNotificationType(n.type);
-          const newNotif = {
-            id: n._id || `ws-notif-${Date.now()}`,
-            title: n.title || 'Notification',
-            body: n.body || '',
-            time: n.created_at
-              ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
-                ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-              : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-            type: mappedType,
-            read: false,
-            metadata: n.metadata,
-            reference_type: n.reference_type,
-            reference_id: n.reference_id
-          };
-
-          // Prepend to list (avoid duplicates)
-          setNotifications(prev => {
-            if (prev.some(x => x.id === newNotif.id)) return prev;
-            return [newNotif, ...prev];
-          });
-
-          // Show a transient toast for forum-type notifications
-          const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved'];
-          if (forumTypes.includes(mappedType)) {
-            setToast({
-              id: `notif-toast-${Date.now()}`,
-              title: n.title,
-              body: n.body,
-              isNotification: true,
-              webUrl: n.metadata?.web_url || '/forum',
-            });
-          }
-          return;
-        }
-
-        if (msg.type === 'chat') {
-          const threadId = msg.groupId || msg.senderId;
-          const isViewingThisChat = activeTabRef.current === 'chat' && threadId === activeConvRef.current?.id;
-
-          // Add to notifications list if not currently active conversation
-          if (!isViewingThisChat) {
+          // ── Real-time in-app notification pushed from server ──
+          if (msg.type === 'notification' && msg.notification) {
+            const n = msg.notification;
+            const mappedType = mapNotificationType(n.type);
             const newNotif = {
-              id: `chat-${Date.now()}`,
-              threadId: threadId,
-              title: `New message from ${msg.senderName}`,
-              body: msg.text,
-              time: msg.time,
-              type: 'chat',
-              read: false
+              id: n._id || `ws-notif-${Date.now()}`,
+              title: n.title || 'Notification',
+              body: n.body || '',
+              time: n.created_at
+                ? new Date(n.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+                  ' ' + new Date(n.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+                : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              type: mappedType,
+              read: false,
+              metadata: n.metadata,
+              reference_type: n.reference_type,
+              reference_id: n.reference_id
             };
-            setNotifications(prev => [newNotif, ...prev]);
 
-            setToast({
-              id: `chat-toast-${Date.now()}`,
-              title: `New message from ${msg.senderName}`,
-              body: msg.text,
-              senderId: threadId,
-              senderName: msg.senderName,
-              senderRole: msg.senderRole,
+            // Prepend to list (avoid duplicates)
+            setNotifications(prev => {
+              if (prev.some(x => x.id === newNotif.id)) return prev;
+              return [newNotif, ...prev];
             });
-          }
-          
-          // Create conversation in list if not exists
-          setConvList(convs => {
-            const exists = convs.some(c => c.id === threadId);
-            if (!exists) {
-              const newConv = {
-                id: threadId,
-                name: msg.senderName,
-                role: msg.senderRole || "Member",
-                avatar: msg.senderName ? msg.senderName.substring(0, 2).toUpperCase() : "U",
-                avatar_url: msg.senderAvatarUrl || '',
-                color: 'var(--cyan-400)',
-                lastMsg: msg.text,
-                time: msg.time,
-                unread: isViewingThisChat ? 0 : 1,
-                online: true
-              };
-              return [newConv, ...convs];
+
+            // Show a transient toast for forum-type notifications
+            const forumTypes = ['forum_comment', 'forum_reply', 'forum_reaction', 'forum_approved'];
+            if (forumTypes.includes(mappedType)) {
+              setToast({
+                id: `notif-toast-${Date.now()}`,
+                title: n.title,
+                body: n.body,
+                isNotification: true,
+                webUrl: n.metadata?.web_url || '/forum',
+              });
             }
-            return convs.map(c => c.id === threadId ? { ...c, lastMsg: msg.text, time: msg.time, avatar_url: msg.senderAvatarUrl || c.avatar_url || '', unread: isViewingThisChat ? 0 : c.unread + 1 } : c);
-          });
+            return;
+          }
 
-          // Add message to thread
-          setMessages(prev => ({
-            ...prev,
-            [threadId]: [...(prev[threadId] || []), {
-              id: Date.now(),
-              from: 'them',
-              senderName: msg.senderName,
-              senderAvatarUrl: msg.senderAvatarUrl || '',
-              text: msg.text,
-              time: msg.time
-            }]
-          }));
+          if (msg.type === 'chat') {
+            const threadId = msg.groupId || msg.senderId;
+            const isViewingThisChat = activeTabRef.current === 'chat' && String(threadId) === String(activeConvRef.current?.id);
+
+            // Add to notifications list if not currently active conversation
+            if (!isViewingThisChat) {
+              const newNotif = {
+                id: `chat-${Date.now()}`,
+                threadId: threadId,
+                title: `New message from ${msg.senderName}`,
+                body: msg.text,
+                time: msg.time,
+                type: 'chat',
+                read: false
+              };
+              setNotifications(prev => [newNotif, ...prev]);
+
+              setToast({
+                id: `chat-toast-${Date.now()}`,
+                title: `New message from ${msg.senderName}`,
+                body: msg.text,
+                senderId: threadId,
+                senderName: msg.senderName,
+                senderRole: msg.senderRole,
+              });
+            }
+            
+            // Create conversation in list if not exists
+            setConvList(convs => {
+              const exists = convs.some(c => c.id === threadId);
+              if (!exists) {
+                const newConv = {
+                  id: threadId,
+                  name: msg.senderName,
+                  role: msg.senderRole || "Member",
+                  avatar: msg.senderName ? msg.senderName.substring(0, 2).toUpperCase() : "U",
+                  avatar_url: msg.senderAvatarUrl || '',
+                  color: 'var(--cyan-400)',
+                  lastMsg: msg.text,
+                  time: msg.time,
+                  unread: isViewingThisChat ? 0 : 1,
+                  online: true
+                };
+                return [newConv, ...convs];
+              }
+              return convs.map(c => c.id === threadId ? { ...c, lastMsg: msg.text, time: msg.time, avatar_url: msg.senderAvatarUrl || c.avatar_url || '', unread: isViewingThisChat ? 0 : c.unread + 1 } : c);
+            });
+
+            // Add message to thread
+            setMessages(prev => ({
+              ...prev,
+              [threadId]: [...(prev[threadId] || []), {
+                id: Date.now(),
+                from: 'them',
+                senderName: msg.senderName,
+                senderAvatarUrl: msg.senderAvatarUrl || '',
+                text: msg.text,
+                time: msg.time
+              }]
+            }));
+          }
+        } catch (err) {
+          console.error('Error parsing WS message:', err);
         }
-      } catch (err) {
-        console.error('Error parsing WS message:', err);
-      }
+      };
+
+      socket.onclose = () => {
+        console.log('User WebSocket disconnected, retrying in 5s...');
+        retryTimer = setTimeout(connect, 5000);
+      };
     };
 
-    socket.onclose = () => {
-      console.log('User WebSocket disconnected');
-    };
+    connect();
 
     return () => {
-      socket.close();
+      if (socket) {
+        socket.onclose = null;
+        socket.close();
+      }
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [currentUser]);
+  }, [currentUser?._id]);
 
   // Debounced search for find friend API
   useEffect(() => {
@@ -638,29 +648,18 @@ export default function UserNotifications() {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim() || !activeConv) return;
+    const textToSend = inputText.trim();
+    setInputText('');
     const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-    // Send through WebSocket if connected
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
-      wsRef.current.send(JSON.stringify({
-        type: 'chat',
-        senderId: currentUser._id,
-        senderName: currentUser.full_name,
-        senderRole: currentUser.role,
-        targetId: activeConv.id,
-        text: inputText.trim(),
-        time: timeStr
-      }));
-    }
 
     const newMsg = {
       id: Date.now(),
       from: 'me',
       senderName: currentUser?.full_name || 'Me',
       senderAvatarUrl: currentUser?.avatar_url || '',
-      text: inputText.trim(),
+      text: textToSend,
       time: timeStr,
       read: false,
     };
@@ -668,7 +667,26 @@ export default function UserNotifications() {
       ...prev,
       [activeConv.id]: [...(prev[activeConv.id] || []), newMsg],
     }));
-    setInputText('');
+
+    try {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
+        wsRef.current.send(JSON.stringify({
+          type: 'chat',
+          senderId: currentUser._id,
+          senderName: currentUser.full_name,
+          senderRole: currentUser.role,
+          targetId: activeConv.id,
+          text: textToSend,
+          time: timeStr
+        }));
+      }
+      await apiService.post('/chat/send', {
+        targetId: activeConv.id,
+        text: textToSend
+      });
+    } catch (err) {
+      console.error('Failed to send message via API:', err);
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -693,21 +711,9 @@ export default function UserNotifications() {
     }
   };
 
-  const sendImageMessage = (imageUrl) => {
+  const sendImageMessage = async (imageUrl) => {
     const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const imageMsgText = `[IMAGE]:${imageUrl}`;
-
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
-      wsRef.current.send(JSON.stringify({
-        type: 'chat',
-        senderId: currentUser._id,
-        senderName: currentUser.full_name,
-        senderRole: currentUser.role,
-        targetId: activeConv.id,
-        text: imageMsgText,
-        time: timeStr
-      }));
-    }
 
     const newMsg = {
       id: Date.now(),
@@ -722,6 +728,26 @@ export default function UserNotifications() {
       ...prev,
       [activeConv.id]: [...(prev[activeConv.id] || []), newMsg],
     }));
+
+    try {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser) {
+        wsRef.current.send(JSON.stringify({
+          type: 'chat',
+          senderId: currentUser._id,
+          senderName: currentUser.full_name,
+          senderRole: currentUser.role,
+          targetId: activeConv.id,
+          text: imageMsgText,
+          time: timeStr
+        }));
+      }
+      await apiService.post('/chat/send', {
+        targetId: activeConv.id,
+        text: imageMsgText
+      });
+    } catch (err) {
+      console.error('Failed to send image message via API:', err);
+    }
   };
 
   // Start a new chat with a user from directory
