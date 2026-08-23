@@ -12,7 +12,7 @@ export default function WeatherBanner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [config, setConfig] = useState(null);
-  
+
   // State for dynamic background & data based on hovered forecast
   const [hoveredForecast, setHoveredForecast] = useState(null);
 
@@ -29,7 +29,7 @@ export default function WeatherBanner() {
   useEffect(() => {
     function handleClickOutside(event) {
       if (bannerRef.current && !bannerRef.current.contains(event.target) &&
-          popoverRef.current && !popoverRef.current.contains(event.target)) {
+        popoverRef.current && !popoverRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     }
@@ -173,13 +173,13 @@ export default function WeatherBanner() {
   return (
     <div style={{ position: 'relative', marginBottom: 20, color: textColor, textShadow: textShadow, transition: 'color 0.5s ease, text-shadow 0.5s ease' }}>
       {/* ── BANNER ── */}
-      <div 
+      <div
         ref={bannerRef}
-        className="card p-4" 
-        style={{ 
+        className="card p-4"
+        style={{
           background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.1)', 
-          position: 'relative', 
+          border: '1px solid rgba(255,255,255,0.1)',
+          position: 'relative',
           overflow: 'hidden',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           boxShadow: isOpen ? '0 0 15px rgba(6,182,212,0.3)' : 'none',
@@ -195,9 +195,9 @@ export default function WeatherBanner() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 1, pointerEvents: 'none' }}>
           <WeatherEffects condition={activeCondition} weatherId={activeWeatherId} isDay={activeIsDay} />
         </div>
-        
+
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 0% 50%, rgba(255,255,255,0.1), transparent 40%)', pointerEvents: 'none', zIndex: 0 }} />
-        
+
         <div className="flex items-center gap-4 flex-wrap" style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="flex items-center gap-3">
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -223,12 +223,12 @@ export default function WeatherBanner() {
               </div>
             </div>
           </div>
-          
+
           {/* Mini Forecast inside Banner */}
           <div className="flex items-center gap-5" style={{ marginLeft: 'auto', marginRight: 20 }}>
             {getDailyForecast().slice(1, 3).map((f, i) => (
               <div key={i} className="flex items-center gap-2" style={{ borderLeft: `1px solid ${textMuted}`, paddingLeft: 20 }}>
-                 <img src={`http://openweathermap.org/img/wn/${f.weather[0].icon}.png`} alt="icon" style={{ width: 30, height: 30 }} />
+                <img src={`http://openweathermap.org/img/wn/${f.weather[0].icon}.png`} alt="icon" style={{ width: 30, height: 30 }} />
                 <div>
                   <div style={{ fontSize: '0.75rem', color: textMuted }}>
                     {i === 0 ? 'Tomorrow' : 'Day after'}
@@ -243,7 +243,7 @@ export default function WeatherBanner() {
         </div>
 
         {/* View Details Button */}
-        <button 
+        <button
           onClick={() => setIsOpen(!isOpen)}
           style={{
             position: 'relative', zIndex: 1,
@@ -264,8 +264,8 @@ export default function WeatherBanner() {
       </div>
 
       {/* ── INLINE ACCORDION DETAILS ── */}
-      <div 
-        style={{ 
+      <div
+        style={{
           display: 'grid',
           gridTemplateRows: isOpen ? '1fr' : '0fr',
           transition: 'grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.4s',
@@ -275,7 +275,7 @@ export default function WeatherBanner() {
         }}
       >
         <div style={{ overflow: 'hidden' }}>
-          <div 
+          <div
             ref={popoverRef}
             style={{
               position: 'relative',
@@ -293,12 +293,12 @@ export default function WeatherBanner() {
               transition: 'color 0.5s ease, text-shadow 0.5s ease'
             }}
           >
-          {/* Dynamic Background Effect based on Hover */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, opacity: 1, transition: 'all 0.5s ease' }}>
-            <WeatherEffects condition={activeCondition} weatherId={activeWeatherId} isDay={activeIsDay} />
-          </div>
+            {/* Dynamic Background Effect based on Hover */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, opacity: 1, transition: 'all 0.5s ease' }}>
+              <WeatherEffects condition={activeCondition} weatherId={activeWeatherId} isDay={activeIsDay} />
+            </div>
 
-          <style>{`
+            <style>{`
             @keyframes slideDown {
               from { opacity: 0; transform: translateY(-10px); }
               to { opacity: 1; transform: translateY(0); }
@@ -326,138 +326,138 @@ export default function WeatherBanner() {
             }
           `}</style>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10 }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: textMuted }} />
-              <input 
-                className="weather-search-input"
-                type="text" 
-                placeholder="Search for a city..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 45px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '12px',
-                  color: textColor,
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  textShadow: textShadow
-                }}
-              />
-            </div>
-            <button type="submit" style={{
-              padding: '0 20px', background: 'rgba(255,255,255,0.2)', color: textColor, border: '1px solid rgba(255,255,255,0.3)', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, textShadow: textShadow,
-              transition: 'background 0.2s'
-            }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>Search</button>
-          </form>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>Fetching weather data...</div>
-          ) : error ? (
-            <div style={{ color: '#ef4444', textAlign: 'center', padding: '40px 0', textShadow: 'none', fontWeight: 'bold' }}>{error}</div>
-          ) : activeData ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-              
-              {/* Main Weather Card (Updates on Hover) */}
-              <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '24px' }}>
-                <img 
-                  src={`http://openweathermap.org/img/wn/${activeWeatherObj.icon}@4x.png`} 
-                  alt="weather" 
-                  style={{ width: 100, height: 100, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }} 
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10 }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: textMuted }} />
+                <input
+                  className="weather-search-input"
+                  type="text"
+                  placeholder="Search for a city..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 45px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    color: textColor,
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    textShadow: textShadow
+                  }}
                 />
-                <div>
-                  <div style={{ fontSize: '3.5rem', fontWeight: 300, lineHeight: 1 }}>
-                    {Math.round(activeData.main.temp)}°C
-                  </div>
-                  <div style={{ fontSize: '1.2rem', color: textColor, textTransform: 'capitalize', marginTop: 8, fontWeight: 500 }}>
-                    {activeCondition} - {activeWeatherObj.description}
-                  </div>
-                  {hoveredForecast && (
-                    <div style={{ fontSize: '0.85rem', color: textMuted, marginTop: 4 }}>
-                      Forecast for {formatTime(hoveredForecast.dt)}
+              </div>
+              <button type="submit" style={{
+                padding: '0 20px', background: 'rgba(255,255,255,0.2)', color: textColor, border: '1px solid rgba(255,255,255,0.3)', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, textShadow: textShadow,
+                transition: 'background 0.2s'
+              }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>Search</button>
+            </form>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>Fetching weather data...</div>
+            ) : error ? (
+              <div style={{ color: '#ef4444', textAlign: 'center', padding: '40px 0', textShadow: 'none', fontWeight: 'bold' }}>{error}</div>
+            ) : activeData ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+
+                {/* Main Weather Card (Updates on Hover) */}
+                <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '24px' }}>
+                  <img
+                    src={`http://openweathermap.org/img/wn/${activeWeatherObj.icon}@4x.png`}
+                    alt="weather"
+                    style={{ width: 100, height: 100, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: 300, lineHeight: 1 }}>
+                      {Math.round(activeData.main.temp)}°C
                     </div>
-                  )}
+                    <div style={{ fontSize: '1.2rem', color: textColor, textTransform: 'capitalize', marginTop: 8, fontWeight: 500 }}>
+                      {activeCondition} - {activeWeatherObj.description}
+                    </div>
+                    {hoveredForecast && (
+                      <div style={{ fontSize: '0.85rem', color: textMuted, marginTop: 4 }}>
+                        Forecast for {formatTime(hoveredForecast.dt)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Detailed Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="glass-panel">
-                  <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Thermometer size={16} /> Feels like
+                {/* Detailed Metrics */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="glass-panel">
+                    <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Thermometer size={16} /> Temperature
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{Math.round(activeData.main.feels_like)}°C</div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{Math.round(activeData.main.feels_like)}°C</div>
-                </div>
-                <div className="glass-panel">
-                  <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Droplets size={16} /> Humidity
+                  <div className="glass-panel">
+                    <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Droplets size={16} /> Humidity
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.main.humidity}%</div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.main.humidity}%</div>
-                </div>
-                <div className="glass-panel">
-                  <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Wind size={16} /> Wind
+                  <div className="glass-panel">
+                    <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Wind size={16} /> Wind Speed
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.wind.speed} m/s</div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.wind.speed} m/s</div>
-                </div>
-                <div className="glass-panel">
-                  <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Cloud size={16} /> Cloudiness
+                  <div className="glass-panel">
+                    <div style={{ color: textMuted, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Cloud size={16} /> Cloudiness
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.clouds.all}%</div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{activeData.clouds.all}%</div>
                 </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {/* Hourly Forecast Slider */}
-          {forecast.length > 0 && (
-            <div className="glass-panel" style={{ padding: '20px' }}>
-              <div style={{ color: textColor, fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 16 }}>
-                Hourly Forecast (Drag to scroll, Hover to preview effect)
+            {/* Hourly Forecast Slider */}
+            {forecast.length > 0 && (
+              <div className="glass-panel" style={{ padding: '20px' }}>
+                <div style={{ color: textColor, fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 16 }}>
+                  Hourly Forecast (Drag to scroll, Hover to preview effect)
+                </div>
+                <div
+                  ref={sliderRef}
+                  className="hourly-slider"
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseUp={handleMouseUp}
+                  onMouseMove={handleMouseMove}
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    overflowX: 'auto',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    paddingBottom: '10px'
+                  }}
+                >
+                  {forecast.map((f, i) => (
+                    <div
+                      key={i}
+                      className="hourly-item"
+                      onMouseEnter={() => setHoveredForecast(f)}
+                      onMouseLeave={() => setHoveredForecast(null)}
+                      style={{
+                        minWidth: '80px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        padding: '12px',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.85rem', color: textMuted, fontWeight: 500 }}>{formatTime(f.dt)}</div>
+                      <img src={`http://openweathermap.org/img/wn/${f.weather[0].icon}.png`} alt="icon" style={{ width: 40, height: 40, margin: '8px 0', pointerEvents: 'none', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+                      <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{Math.round(f.main.temp)}°</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div 
-                ref={sliderRef}
-                className="hourly-slider"
-                onMouseDown={handleMouseDown}
-                onMouseLeave={handleMouseLeave}
-                onMouseUp={handleMouseUp}
-                onMouseMove={handleMouseMove}
-                style={{ 
-                  display: 'flex', 
-                  gap: '12px', 
-                  overflowX: 'auto', 
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                  paddingBottom: '10px'
-                }}
-              >
-                {forecast.map((f, i) => (
-                  <div 
-                    key={i} 
-                    className="hourly-item"
-                    onMouseEnter={() => setHoveredForecast(f)}
-                    onMouseLeave={() => setHoveredForecast(null)}
-                    style={{ 
-                      minWidth: '80px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      padding: '12px',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.85rem', color: textMuted, fontWeight: 500 }}>{formatTime(f.dt)}</div>
-                    <img src={`http://openweathermap.org/img/wn/${f.weather[0].icon}.png`} alt="icon" style={{ width: 40, height: 40, margin: '8px 0', pointerEvents: 'none', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{Math.round(f.main.temp)}°</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
 
           </div>
         </div>

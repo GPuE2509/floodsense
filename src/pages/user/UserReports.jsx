@@ -312,26 +312,26 @@ export default function UserReports() {
       setAiResult(null);
       return;
     }
-    
+
     let totalProb = 0;
     let totalConf = 0;
     let threshold = 0.5;
-    
+
     floodImages.forEach(img => {
       totalProb += img.aiResult.probability_flooded ?? 0;
       totalConf += img.aiResult.confidence ?? 0;
       threshold = img.aiResult.threshold ?? 0.5;
     });
-    
+
     const avgProb = totalProb / floodImages.length;
     const avgConf = totalConf / floodImages.length;
-    
+
     const mockResult = {
       probability_flooded: avgProb,
       confidence: avgConf,
       threshold: threshold
     };
-    
+
     setAiResult(mockResult);
   };
 
@@ -341,14 +341,14 @@ export default function UserReports() {
       recalculateAverage(currentImages);
       return;
     }
-    
+
     setIsAiAnalyzing(true);
     try {
       const promises = missing.map(async (img) => {
         const response = await fetch(img.url);
         const blob = await response.blob();
         const file = new File([blob], img.name, { type: blob.type });
-        
+
         const formData = new FormData();
         formData.append('image', file);
         const aiServerUrl = import.meta.env.VITE_AI_API_URL || 'http://localhost:5002';
@@ -377,7 +377,7 @@ export default function UserReports() {
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+
     if (images.length + files.length > 10) {
       setToast({ type: 'error', message: 'You can only upload up to 10 images.' });
       setTimeout(() => setToast(null), 3000);
@@ -398,7 +398,7 @@ export default function UserReports() {
     }
     const updated = [...images, ...newImages];
     setImages(updated);
-    
+
     if (reportType === 'flood') {
       analyzeAllMissingImages(updated);
     }
@@ -650,9 +650,9 @@ export default function UserReports() {
 
       <div className="tabs-nav" style={{ marginBottom: 20, maxWidth: 600 }}>
         {[
-          { id: 'submit', label: "Submit report", icon: Upload },
-          { id: 'my', label: "My report", icon: FileText },
-          { id: 'verify', label: "Community verification", icon: AlertTriangle },
+          { id: 'submit', label: "Submit Report", icon: Upload },
+          { id: 'my', label: "My Report", icon: FileText },
+          { id: 'verify', label: "Community Verification", icon: AlertTriangle },
         ].map(t => {
           const Icon = t.icon;
           return (
@@ -749,7 +749,6 @@ export default function UserReports() {
                     { val: 3, label: '3 hours' },
                     { val: 6, label: '6 hours' },
                     { val: 12, label: '12 hours' },
-                    { val: 16 / 60, label: '16 min (test)' },
                   ].map(d => (
                     <button
                       key={d.val}
@@ -1012,7 +1011,7 @@ export default function UserReports() {
                   Previous
                 </button>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Page 
+                  Page
                   <input
                     type="number"
                     min={1}
@@ -1209,7 +1208,7 @@ export default function UserReports() {
                   Previous
                 </button>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Page 
+                  Page
                   <input
                     type="number"
                     min={1}

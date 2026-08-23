@@ -88,10 +88,10 @@ const emergencyServices = [
 const initContacts = [];
 
 const SOS_TYPES = [
-  { id: 'flood', label: "The car stalled due to flooding", icon: Car },
-  { id: 'stuck', label: "Stuck, can't escape", icon: AlertTriangle },
+  { id: 'flood', label: "The vehicle stalled due to flooding", icon: Car },
+  { id: 'stuck', label: "Unable to move, cannot escape", icon: AlertTriangle },
   { id: 'medical', label: "Need medical assistance", icon: Heart },
-  { id: 'other', label: "Other", icon: LifeBuoy },
+  { id: 'other', label: "Other scenario", icon: LifeBuoy },
 ];
 
 // ── SVG Map: User + Rescue Vehicle ──────────────────────────────────────────
@@ -1433,13 +1433,13 @@ export default function UserSOS() {
     if (!selectedHistoryItem) return null;
     const isMobileRepair = !!selectedHistoryItem.workshop_id;
     const severity = selectedHistoryItem.emergency_type === 'Medical' ? 'critical' : (selectedHistoryItem.workshop_id ? 'medium' : 'high');
-    const emergencyLabel = selectedHistoryItem.workshop_id 
-      ? 'Vehicle broken/engine stalled due to flood' 
-      : (selectedHistoryItem.emergency_type === 'Medical' 
-          ? 'Urgent medical support needed' 
-          : (selectedHistoryItem.emergency_type === 'Trapped_By_Flood' 
-              ? 'Trapped in flooded area' 
-              : selectedHistoryItem.custom_emergency_type || 'Other rescue request'));
+    const emergencyLabel = selectedHistoryItem.workshop_id
+      ? 'Vehicle broken/engine stalled due to flood'
+      : (selectedHistoryItem.emergency_type === 'Medical'
+        ? 'Urgent medical support needed'
+        : (selectedHistoryItem.emergency_type === 'Trapped_By_Flood'
+          ? 'Trapped in flooded area'
+          : selectedHistoryItem.custom_emergency_type || 'Other rescue request'));
     const phoneNum = selectedHistoryItem.sender_phone || 'Not provided';
     const coordsText = `Coords: ${selectedHistoryItem.initial_lat?.toFixed(4)}, ${selectedHistoryItem.initial_lng?.toFixed(4)}`;
     const timeText = new Date(selectedHistoryItem.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -1453,8 +1453,8 @@ export default function UserSOS() {
     let photosList = [];
     if (selectedHistoryItem.photos) {
       try {
-        photosList = typeof selectedHistoryItem.photos === 'string' 
-          ? JSON.parse(selectedHistoryItem.photos) 
+        photosList = typeof selectedHistoryItem.photos === 'string'
+          ? JSON.parse(selectedHistoryItem.photos)
           : selectedHistoryItem.photos;
       } catch (e) {
         console.error(e);
@@ -1663,7 +1663,7 @@ export default function UserSOS() {
   const tabs = [
     { id: 'send', label: "Send SOS", icon: AlertTriangle },
     { id: 'mobile_repair', label: "Mobile Repair Request", icon: Wrench },
-    { id: 'contacts', label: "Contact urgently", icon: PhoneCall },
+    { id: 'contacts', label: "Emergency Contacts", icon: PhoneCall },
     { id: 'history', label: "Emergency Request History", icon: Clock },
   ];
 
@@ -2423,8 +2423,8 @@ export default function UserSOS() {
                           Showing <strong style={{ color: 'var(--text-primary)' }}>{historyTotalItems === 0 ? 0 : (historyPage - 1) * 5 + 1}-{Math.min(historyPage * 5, historyTotalItems)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{historyTotalItems}</strong> requests
                         </span>
                         <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
-                          <button 
-                            className="btn btn-sm btn-ghost" 
+                          <button
+                            className="btn btn-sm btn-ghost"
                             onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                             disabled={historyPage === 1}
                             style={{ opacity: historyPage === 1 ? 0.5 : 1 }}
@@ -2432,11 +2432,11 @@ export default function UserSOS() {
                             Previous
                           </button>
                           <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                            Page 
-                            <input 
-                              type="number" 
-                              min="1" 
-                              max={historyTotalPages} 
+                            Page
+                            <input
+                              type="number"
+                              min="1"
+                              max={historyTotalPages}
                               value={historyPageInput}
                               onChange={(e) => {
                                 const valStr = e.target.value;
@@ -2463,8 +2463,8 @@ export default function UserSOS() {
                             />
                             of {historyTotalPages}
                           </span>
-                          <button 
-                            className="btn btn-sm btn-ghost" 
+                          <button
+                            className="btn btn-sm btn-ghost"
                             onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
                             disabled={historyPage === historyTotalPages}
                             style={{ opacity: historyPage === historyTotalPages ? 0.5 : 1 }}

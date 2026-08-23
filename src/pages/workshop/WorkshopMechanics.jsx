@@ -23,6 +23,8 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
   const [suspendingStaff, setSuspendingStaff] = useState(null);
+  const [cancelingStaff, setCancelingStaff] = useState(null);
+  const [firingStaff, setFiringStaff] = useState(null);
   const setToast = (obj) => {
     if (!obj) return;
     window.dispatchEvent(new CustomEvent('show-toast', {
@@ -124,6 +126,45 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
     } finally {
       setIsSaving(false);
       setSuspendingStaff(null);
+    }
+  };
+
+  const handleCancelInvitation = (mech) => {
+    setCancelingStaff(mech);
+  };
+
+  const confirmCancelInvitation = async () => {
+    if (!cancelingStaff) return;
+    try {
+      setIsSaving(true);
+      const res = await apiService.delete(`/workshops/me/staff/${cancelingStaff.userId}/invite`);
+      if (res) {
+        setToast({ type: 'success', message: 'Invitation canceled successfully!' });
+        fetchStaff();
+      }
+    } catch (err) {
+      setToast({ type: 'error', message: err.message || 'Failed to cancel invitation.' });
+    } finally {
+      setIsSaving(false);
+      setCancelingStaff(null);
+    }
+  };
+
+  const confirmFireStaff = async () => {
+    if (!firingStaff) return;
+    try {
+      setIsSaving(true);
+      const res = await apiService.delete(`/workshops/me/staff/${firingStaff.userId}`);
+      if (res) {
+        setToast({ type: 'success', message: 'Staff member fired successfully!' });
+        setSelected(null);
+        fetchStaff();
+      }
+    } catch (err) {
+      setToast({ type: 'error', message: err.message || 'Failed to fire staff member.' });
+    } finally {
+      setIsSaving(false);
+      setFiringStaff(null);
     }
   };
 
@@ -428,6 +469,9 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                   <button className={`btn btn-sm ${mechanics.find(m => m.id === selected.id)?.status === 'active' ? 'btn-danger' : 'btn-success'}`} onClick={() => toggleStatus(selected.id)}>
                     <ToggleRight size={13} /> {mechanics.find(m => m.id === selected.id)?.status === 'active' ? "Suspend Activities" : "Reactivate"}
                   </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => setFiringStaff(selected)}>
+                    <Trash2 size={13} /> Fire Staff
+                  </button>
                 </div>
               )}
             </div>
@@ -533,7 +577,7 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                         Waiting for user to accept the staff invitation. {m.invitedAt !== 'Unknown' && <span style={{ marginLeft: 4 }}>· Invited at: {m.invitedAt}</span>}
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-3">
                       <div style={{
                         fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6,
                         background: m.status === 'pending' ? 'rgba(56,189,248,0.1)' : m.status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
@@ -541,6 +585,15 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
                       }}>
                         {m.status === 'pending' ? 'PENDING' : m.status === 'rejected' ? 'REJECTED' : 'ACCEPTED'}
                       </div>
+                      {m.status === 'pending' && (
+                        <button
+                          className="btn btn-danger btn-sm"
+                          style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                          onClick={() => handleCancelInvitation(m)}
+                        >
+                          Cancel Invite
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -561,6 +614,28 @@ export default function WorkshopMechanics({ linkRequests = [], onApproveLink, on
         loading={isSaving}
         onConfirm={confirmSuspend}
         onCancel={() => setSuspendingStaff(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!cancelingStaff}
+        title="Cancel Invitation"
+        message={cancelingStaff ? `Are you sure you want to cancel the invitation for ${cancelingStaff.name}?` : ''}
+        confirmText="Confirm"
+        type="danger"
+        loading={isSaving}
+        onConfirm={confirmCancelInvitation}
+        onCancel={() => setCancelingStaff(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!firingStaff}
+        title="Fire Staff"
+        message={firingStaff ? `Are you sure you want to fire ${firingStaff.name} from the workshop? This will cancel all their future shift assignments.` : ''}
+        confirmText="Fire Staff"
+        type="danger"
+        loading={isSaving}
+        onConfirm={confirmFireStaff}
+        onCancel={() => setFiringStaff(null)}
       />
     </div>
   );

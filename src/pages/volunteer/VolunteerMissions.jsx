@@ -1276,11 +1276,11 @@ export default function VolunteerMissions() {
       {/* Summary Stats */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
+          { label: "Total SOS", value: totalSOS, color: 'var(--cyan-400)' },
           { label: "Waiting for routing", value: stats.pending, color: 'var(--red-400)', anim: true },
           { label: "Processing", value: stats.in_progress, color: 'var(--orange-400)' },
           { label: "Completed", value: stats.resolved, color: 'var(--green-400)' },
           { label: "Cancelled", value: stats.cancelled, color: 'var(--text-muted)' },
-          { label: "Total SOS", value: totalSOS, color: 'var(--cyan-400)' },
         ].map((s) => (
           <div key={s.label} className="card p-5 flex items-center gap-4">
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)', ...(s.anim ? { animation: 'blink 2s ease-in-out infinite' } : {}) }}>
@@ -1584,7 +1584,7 @@ export default function VolunteerMissions() {
                         borderRadius: 'var(--r-sm)',
                         fontWeight: 600
                       }}>
-                         Waiting for the rescuee to confirm safety...
+                        Waiting for the rescuee to confirm safety...
                       </div>
                       <button
                         className="btn btn-success"

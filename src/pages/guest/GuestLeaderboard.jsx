@@ -49,7 +49,7 @@ export default function GuestLeaderboard() {
   const [timeFilter, setTimeFilter] = useState('AllTime');
   const [limit, setLimit] = useState(5);
   const [page, setPage] = useState(1);
-  
+
   const [leaders, setLeaders] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -127,7 +127,7 @@ export default function GuestLeaderboard() {
           <select
             value={selectedYear}
             onChange={e => { setSelectedYear(e.target.value); setPage(1); }}
-            style={{ 
+            style={{
               background: 'rgba(18,29,40,0.8)', color: 'var(--text-primary)', border: '1px solid var(--border-dim)', borderRadius: '8px', padding: '8px 14px', fontSize: '0.9rem', outline: 'none', cursor: 'pointer'
             }}
           >
@@ -137,7 +137,7 @@ export default function GuestLeaderboard() {
           <select
             value={timeFilter}
             onChange={e => { setTimeFilter(e.target.value); setPage(1); }}
-            style={{ 
+            style={{
               background: 'rgba(18,29,40,0.8)', color: 'var(--text-primary)', border: '1px solid var(--border-dim)', borderRadius: '8px', padding: '8px 14px', fontSize: '0.9rem', outline: 'none', cursor: 'pointer'
             }}
           >
@@ -155,7 +155,7 @@ export default function GuestLeaderboard() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {tabs.map(tab => (
-                <button 
+                <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setPage(1); }}
                   style={{
@@ -194,7 +194,7 @@ export default function GuestLeaderboard() {
                 const rank = (page - 1) * limit + index + 1;
                 let rankColor = 'var(--text-muted)';
                 let borderLeftColor = 'var(--border-default)';
-                
+
                 if (rank === 1) { rankColor = 'var(--gold-400)'; borderLeftColor = 'var(--gold-400)'; }
                 else if (rank === 2) { rankColor = '#C0C0C0'; borderLeftColor = '#C0C0C0'; } // Silver
                 else if (rank === 3) { rankColor = '#CD7F32'; borderLeftColor = '#CD7F32'; } // Bronze
@@ -202,9 +202,9 @@ export default function GuestLeaderboard() {
                 const getOrdinalSuffix = (n) => {
                   if (n > 3 && n < 21) return 'th';
                   switch (n % 10) {
-                    case 1:  return "st";
-                    case 2:  return "nd";
-                    case 3:  return "rd";
+                    case 1: return "st";
+                    case 2: return "nd";
+                    case 3: return "rd";
                     default: return "th";
                   }
                 };
@@ -216,11 +216,11 @@ export default function GuestLeaderboard() {
                       {rank <= 3 ? (
                         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
                           <Trophy size={46} color={rankColor} strokeWidth={1.5} />
-                          <span style={{ 
-                            position: 'absolute', 
-                            top: 4, 
-                            fontSize: '1rem', 
-                            fontWeight: 900, 
+                          <span style={{
+                            position: 'absolute',
+                            top: 4,
+                            fontSize: '1rem',
+                            fontWeight: 900,
                             color: rankColor
                           }}>
                             {rank}
@@ -262,7 +262,7 @@ export default function GuestLeaderboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', background: 'rgba(18,29,40,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Show
-              <select value={limit} onChange={e => {setLimit(Number(e.target.value)); setPage(1);}} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-dim)', borderRadius: '4px', padding: '4px 8px', outline: 'none', cursor: 'pointer' }}>
+              <select value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1); }} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-dim)', borderRadius: '4px', padding: '4px 8px', outline: 'none', cursor: 'pointer' }}>
                 <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -326,7 +326,7 @@ export default function GuestLeaderboard() {
                     );
                   })}
                 </div>
-                
+
                 {rewards.length > 5 && (
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }}>
                     <button disabled={rewardPage === 1} onClick={() => setRewardPage(p => p - 1)} style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', borderRadius: '4px', cursor: rewardPage === 1 ? 'not-allowed' : 'pointer', color: rewardPage === 1 ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.8rem' }}>Prev</button>

@@ -47,7 +47,7 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
       setError("Your browser does not support location retrieval.");
       return;
     }
-    
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCurrentLat(position.coords.latitude.toFixed(6));
@@ -93,7 +93,7 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
       }
 
       await apiService.upload('/volunteers/me', formData, {}, 'PUT');
-      
+
       onSuccess();
     } catch (err) {
       setError(err.message || "Update error. Please try again later.");
@@ -106,7 +106,7 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
       <div className="card" style={{ position: 'relative', width: '100%', maxWidth: 480, margin: '20px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        
+
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-dim)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-primary)' }}>Update rescue vehicles</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -120,23 +120,23 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
           </p>
 
           <form id="volunteer-edit-form" onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
-            
+
             {/* Loại phương tiện */}
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'block' }}>
                 Vehicle type <span style={{ color: 'var(--red-400)' }}>*</span>
               </label>
-              <select 
-                className="input" 
-                value={vehicleType} 
+              <select
+                className="input"
+                value={vehicleType}
                 onChange={(e) => setVehicleType(e.target.value)}
                 style={{ width: '100%' }}
                 required
               >
                 <option value="" disabled>-- Select vehicle type --</option>
                 <option value="Canoe">Canoe / Boat</option>
-                <option value="Pickup_Truck">Pickup truck (High clearance)</option>
-                <option value="Wading_Motorcycle">Amphibious motorbike</option>
+                <option value="Pickup_Truck">Pickup Truck (High clearance)</option>
+                <option value="Wading_Motorcycle">Amphibious Motorbike</option>
                 <option value="Other">Other vehicles</option>
               </select>
             </div>
@@ -146,9 +146,9 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'block' }}>
                 Vehicle license plate number <span style={{ color: 'var(--red-400)' }}>*</span>
               </label>
-              <input 
-                type="text" 
-                className="input" 
+              <input
+                type="text"
+                className="input"
                 placeholder="For example: 65H-123.45"
                 value={vehiclePlate}
                 onChange={(e) => setVehiclePlate(e.target.value)}
@@ -162,22 +162,22 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'block' }}>
                 Actual vehicle photos <span style={{ color: 'var(--red-400)' }}>*</span>
               </label>
-              <div style={{ 
-                border: '1px dashed var(--border-dim)', 
-                borderRadius: 'var(--r-md)', 
-                padding: '16px', 
+              <div style={{
+                border: '1px dashed var(--border-dim)',
+                borderRadius: 'var(--r-md)',
+                padding: '16px',
                 textAlign: 'center',
                 background: 'var(--bg-elevated)',
                 cursor: 'pointer',
                 position: 'relative'
               }}>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept="image/*"
                   onChange={handleImageChange}
                   style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
                 />
-                
+
                 {imagePreview ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                     <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: 150, borderRadius: 'var(--r-sm)', objectFit: 'contain' }} />
@@ -209,7 +209,7 @@ export default function VolunteerEditModal({ isOpen, onClose, onSuccess, initial
             {isLoading ? "Saving..." : <><Save size={14} /> Save changes</>}
           </button>
         </div>
-        
+
       </div>
     </div>
   );

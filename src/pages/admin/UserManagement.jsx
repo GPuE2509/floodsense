@@ -63,7 +63,7 @@ function ChangeRoleModal({ user, onClose, onConfirm }) {
               style={{ width: '100%' }}
               disabled={updating}
             >
-              <option value="user">User (User)</option>
+              <option value="user">User</option>
               <option value="manager">Manager</option>
             </select>
           </div>
@@ -124,9 +124,9 @@ function RoleRequestDetailModal({ request, onClose, onAction, loading }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px 16px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
                 <div style={{ color: 'var(--text-muted)' }}>Vehicle type:</div>
                 <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                  {details.vehicleType === 'Canoe' ? '💧 Cano' :
-                    details.vehicleType === 'Pickup_Truck' ? "🛻 Pickup truck" :
-                      details.vehicleType === 'Wading_Motorcycle' ? "🏍️ Amphibious motorbike" : "🛠️ Other"}
+                  {details.vehicleType === 'Canoe' ? 'Cano' :
+                    details.vehicleType === 'Pickup_Truck' ? "Pickup Truck" :
+                      details.vehicleType === 'Wading_Motorcycle' ? "Amphibious Motorbike" : "Other"}
                 </div>
                 <div style={{ color: 'var(--text-muted)' }}>License plate number:</div>
                 <div style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{details.vehiclePlate}</div>
@@ -710,7 +710,7 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
                   </td>
                   <td>
                     <span className={`badge ${req.requestedRole === 'volunteer' ? 'badge-yellow' :
-                        req.requestedRole === 'workshop' ? 'badge-orange' : 'badge-green'
+                      req.requestedRole === 'workshop' ? 'badge-orange' : 'badge-green'
                       }`}>
                       {req.requestedRole === 'volunteer' ? "🛡️ Volunteer" :
                         req.requestedRole === 'workshop' ? "💼 Car workshop owner" : "🔧 Car repairman"}
@@ -721,7 +721,7 @@ export default function UserManagement({ onApproveRequest, onRejectRequest }) {
                   </td>
                   <td>
                     <span className={`badge ${req.status === 'approved' ? 'badge-green' :
-                        req.status === 'rejected' ? 'badge-red' : 'badge-orange'
+                      req.status === 'rejected' ? 'badge-red' : 'badge-orange'
                       }`}>
                       {req.status === 'approved' ? "Approved" :
                         req.status === 'rejected' ? "Refuse" : "Waiting for approval"}

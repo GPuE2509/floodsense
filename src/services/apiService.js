@@ -37,7 +37,7 @@ async function request(endpoint, options = {}, isRetry = false) {
 
   // Set timeout controller
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 30000); // 10s timeout default
+  const id = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout default
   config.signal = controller.signal;
 
   try {

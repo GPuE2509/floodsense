@@ -17,18 +17,18 @@ const navItems = [
     section: "VOLUNTEER",
     items: [
       { id: 'volunteer-missions', label: "Request SOS", icon: ShieldAlert, badge: null },
-      { id: 'volunteer-profile',  label: "Volunteer profile",       icon: UserCheck, badge: null },
+      { id: 'volunteer-profile', label: "Volunteer Profile", icon: UserCheck, badge: null },
     ],
   },
   {
     section: "User",
     items: [
-      { id: 'user-reports',       label: "Community reporting",        icon: FileText,        badge: null   },
-      { id: 'user-sos',           label: "SOS & Rescue",             icon: ShieldAlert,     badge: null   },
+      { id: 'user-reports', label: "Community Reporting", icon: FileText, badge: null },
+      { id: 'user-sos', label: "SOS & Rescue", icon: ShieldAlert, badge: null },
       { id: 'volunteer-notifications', label: "Notifications & Chat", icon: Bell, badge: null },
-      { id: 'volunteer-forum',         label: "Community forum",       icon: MessageSquare,   badge: null },
-      { id: 'volunteer-guidelines',    label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
-      { id: 'volunteer-rewards',  label: "Honor board",   icon: Trophy, badge: null },
+      { id: 'volunteer-forum', label: "Community Forum", icon: MessageSquare, badge: null },
+      { id: 'volunteer-guidelines', label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
+      { id: 'volunteer-rewards', label: "Honor Board", icon: Trophy, badge: null },
     ],
   },
 ];
@@ -112,8 +112,8 @@ export default function VolunteerSidebar({ activePage, onNavigate, collapsed, on
                   <Icon size={17} className="nav-item-icon" />
                   <span className="nav-item-label">{item.label}</span>
                   {item.id === 'volunteer-notifications'
-                      ? (unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>)
-                      : item.id === 'volunteer-missions'
+                    ? (unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>)
+                    : item.id === 'volunteer-missions'
                       ? (pendingSOSCount > 0 && <span className="nav-badge">{pendingSOSCount}</span>)
                       : (item.badge && <span className="nav-badge">{item.badge}</span>)}
                 </button>
@@ -129,9 +129,9 @@ export default function VolunteerSidebar({ activePage, onNavigate, collapsed, on
           {collapsed
             ? <ChevronRight size={16} color="var(--text-muted)" />
             : <>
-                <ChevronLeft size={16} color="var(--text-muted)" />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
-              </>
+              <ChevronLeft size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
+            </>
           }
         </button>
       </div>

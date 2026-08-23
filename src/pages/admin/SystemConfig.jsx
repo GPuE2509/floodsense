@@ -133,13 +133,13 @@ export default function SystemConfig() {
         prev.waterLevelL3,
         prev.waterLevelL4
       ];
-      
+
       // Validation: lower level must be strictly less than higher level
       if (levelIndex === 0 && value >= current[1]) return prev;
       if (levelIndex === 1 && (value <= current[0] || value >= current[2])) return prev;
       if (levelIndex === 2 && (value <= current[1] || value >= current[3])) return prev;
       if (levelIndex === 3 && value <= current[2]) return prev;
-      
+
       const keys = ['waterLevelL1', 'waterLevelL2', 'waterLevelL3', 'waterLevelL4'];
       return {
         ...prev,
@@ -280,29 +280,29 @@ export default function SystemConfig() {
             </div>
             <div className="syscfg-threshold-grid">
               <AlertThresholdSlider
-              label="🌊 Water Level Warning (Level 1 - Slight)"
-              value={thresholds.waterLevelL1}
-              onChange={(v) => handleWaterLevelChange(0, v)}
-              min={1} max={100} unit="%" colorClass="gold"
-            />
-            <AlertThresholdSlider
-              label="🌊 Water Level Warning (Level 2 - Moderate)"
-              value={thresholds.waterLevelL2}
-              onChange={(v) => handleWaterLevelChange(1, v)}
-              min={1} max={100} unit="%" colorClass="orange"
-            />
-            <AlertThresholdSlider
-              label="🌊 Water Level Warning (Level 3 - Severe)"
-              value={thresholds.waterLevelL3}
-              onChange={(v) => handleWaterLevelChange(2, v)}
-              min={1} max={100} unit="%" colorClass="red"
-            />
-            <AlertThresholdSlider
-              label="🌊 Water Level Warning (Level 4 - Critical)"
-              value={thresholds.waterLevelL4}
-              onChange={(v) => handleWaterLevelChange(3, v)}
-              min={1} max={100} unit="%" colorClass="purple"
-            />
+                label="Water Level Warning (Level 1 - Slight)"
+                value={thresholds.waterLevelL1}
+                onChange={(v) => handleWaterLevelChange(0, v)}
+                min={1} max={100} unit="%" colorClass="gold"
+              />
+              <AlertThresholdSlider
+                label="Water Level Warning (Level 2 - Moderate)"
+                value={thresholds.waterLevelL2}
+                onChange={(v) => handleWaterLevelChange(1, v)}
+                min={1} max={100} unit="%" colorClass="orange"
+              />
+              <AlertThresholdSlider
+                label="Water Level Warning (Level 3 - Severe)"
+                value={thresholds.waterLevelL3}
+                onChange={(v) => handleWaterLevelChange(2, v)}
+                min={1} max={100} unit="%" colorClass="red"
+              />
+              <AlertThresholdSlider
+                label="Water Level Warning (Level 4 - Critical)"
+                value={thresholds.waterLevelL4}
+                onChange={(v) => handleWaterLevelChange(3, v)}
+                min={1} max={100} unit="%" colorClass="purple"
+              />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>

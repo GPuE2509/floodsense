@@ -16,8 +16,8 @@ const navItems = [
   {
     section: "COMMUNITY",
     items: [
-      { id: 'guest-forum', label: "Community forum", icon: MessageSquare, badge: null },
-      { id: 'guest-leaderboard', label: "Honor board", icon: Trophy, badge: null },
+      { id: 'guest-forum', label: "Community Forum", icon: MessageSquare, badge: null },
+      { id: 'guest-leaderboard', label: "Honor Board", icon: Trophy, badge: null },
     ],
   },
   {
@@ -98,9 +98,9 @@ export default function GuestSidebar({ activePage, onNavigate, collapsed, onTogg
           {collapsed
             ? <ChevronRight size={16} color="var(--text-muted)" />
             : <>
-                <ChevronLeft size={16} color="var(--text-muted)" />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
-              </>
+              <ChevronLeft size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
+            </>
           }
         </button>
       </div>

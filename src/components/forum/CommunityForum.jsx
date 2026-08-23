@@ -111,7 +111,7 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
   const [expandedComments, setExpandedComments] = useState({});
   const [expandedReplies, setExpandedReplies] = useState({});
   const [showAllComments, setShowAllComments] = useState({});
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -230,7 +230,7 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
           element.style.transition = 'background-color 0.5s ease, border-color 0.5s ease';
           element.style.backgroundColor = 'rgba(6, 182, 212, 0.1)';
           element.style.borderColor = 'var(--cyan-400)';
-          
+
           const clearTimer = setTimeout(() => {
             element.style.backgroundColor = '';
             element.style.borderColor = 'var(--border-subtle)';
@@ -1079,7 +1079,7 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
             onClick={() => role === 'guest' ? setShowGuestModal(true) : setShowCreator(true)}
             style={{ flex: 1, textAlign: 'left', cursor: 'pointer', color: 'var(--text-muted)', background: 'rgba(18,29,40,0.4)', borderRadius: 24, padding: '10px 18px', border: '1px solid var(--border-dim)', fontFamily: 'var(--font-sans)', fontSize: '0.85rem' }}
           >
-            {role === 'guest' ? "Log in to share flood information..." : "What are you thinking? Share images and flood information..."}
+            {role === 'guest' ? "Log in to share flood information..." : "What are your thoughts? Share images and flood information here..."}
           </button>
           <button className="btn btn-primary" onClick={() => role === 'guest' ? setShowGuestModal(true) : setShowCreator(true)} style={{ flexShrink: 0, gap: 6 }}>
             <PenSquare size={14} /> Create articles
@@ -1371,13 +1371,17 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
                       <div className="flex items-center gap-2">
                         {likesCount > 0 && (
                           <div className="flex items-center gap-1">
-                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(6,182,212,0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>👍</span>
+                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(6,182,212,0.15)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <ThumbsUp size={10} color="var(--cyan-400)" fill="var(--cyan-400)" />
+                            </span>
                             <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{likesCount}</span>
                           </div>
                         )}
                         {heartsCount > 0 && (
                           <div className="flex items-center gap-1">
-                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>❤️</span>
+                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Heart size={10} color="var(--red-400)" fill="var(--red-400)" />
+                            </span>
                             <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{heartsCount}</span>
                           </div>
                         )}
@@ -1488,264 +1492,264 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
                             return (
                               <div key={comment.id} style={{ display: 'flex', flexDirection: 'column' }}>
 
-                              {/* TẦNG 1: Main Comment bubble */}
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                                {renderAvatar(
-                                  (comment.author === currentUser?.full_name || comment.avatar === 'ME') ? (currentUser?.avatar || comment.avatar) : comment.avatar,
-                                  getInitials(comment.author),
-                                  28,
-                                  { border: commRole.border }
-                                )}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                                {/* TẦNG 1: Main Comment bubble */}
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                                  {renderAvatar(
+                                    (comment.author === currentUser?.full_name || comment.avatar === 'ME') ? (currentUser?.avatar || comment.avatar) : comment.avatar,
+                                    getInitials(comment.author),
+                                    28,
+                                    { border: commRole.border }
+                                  )}
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
 
-                                  <div style={{ background: 'rgba(25,39,53,0.85)', padding: '8px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)', position: 'relative', width: 'fit-content', maxWidth: '100%', wordBreak: 'break-word' }}>
-                                    <div className="flex items-center gap-1.5" style={{ marginBottom: 3 }}>
-                                      <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{comment.author}</span>
-                                      <span style={{ fontSize: '0.48rem', fontWeight: 700, padding: '0px 4px', borderRadius: 3, background: commRole.badgeBg, color: commRole.badgeColor }}>
-                                        {commRole.label}
-                                      </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                                      {editingComment && editingComment.postId === post.id && editingComment.commentId === comment.id && !editingComment.replyId ? (
-                                        <div>
-                                          <textarea className="input" rows={2} value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} />
-                                          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                                            <button className="btn btn-sm" onClick={saveEditComment}>Save</button>
-                                            <button className="btn btn-ghost btn-sm" onClick={cancelEditComment}>Cancel</button>
+                                    <div style={{ background: 'rgba(25,39,53,0.85)', padding: '8px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)', position: 'relative', width: 'fit-content', maxWidth: '100%', wordBreak: 'break-word' }}>
+                                      <div className="flex items-center gap-1.5" style={{ marginBottom: 3 }}>
+                                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{comment.author}</span>
+                                        <span style={{ fontSize: '0.48rem', fontWeight: 700, padding: '0px 4px', borderRadius: 3, background: commRole.badgeBg, color: commRole.badgeColor }}>
+                                          {commRole.label}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                        {editingComment && editingComment.postId === post.id && editingComment.commentId === comment.id && !editingComment.replyId ? (
+                                          <div>
+                                            <textarea className="input" rows={2} value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} />
+                                            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                                              <button className="btn btn-sm" onClick={saveEditComment}>Save</button>
+                                              <button className="btn btn-ghost btn-sm" onClick={cancelEditComment}>Cancel</button>
+                                            </div>
                                           </div>
+                                        ) : (
+                                          <TruncatedCommentText text={comment.content} />
+                                        )}
+                                      </div>
+
+                                      {/* Likes indicator on comment bubble (Facebook styled) */}
+                                      {comment.likes > 0 && (
+                                        <div style={{ position: 'absolute', bottom: -8, right: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', padding: '1px 5px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.55rem', color: 'var(--text-secondary)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                                          <ThumbsUp size={10} color="var(--cyan-400)" fill="var(--cyan-400)" />
+                                          <span style={{ fontWeight: 700 }}>{comment.likes}</span>
                                         </div>
-                                      ) : (
-                                        <TruncatedCommentText text={comment.content} />
                                       )}
                                     </div>
 
-                                    {/* Likes indicator on comment bubble (Facebook styled) */}
-                                    {comment.likes > 0 && (
-                                      <div style={{ position: 'absolute', bottom: -8, right: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', padding: '1px 5px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 2, fontSize: '0.55rem', color: 'var(--text-secondary)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                                        <span>👍</span>
-                                        <span style={{ fontWeight: 700 }}>{comment.likes}</span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Actions Level 1 comment (Thời gian + Reply + Xoá) */}
-                                  <div className="flex items-center gap-3" style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4, paddingLeft: 4 }}>
-                                    <span style={{ fontSize: '0.65rem' }}>{comment.time}</span>
-                                    <button
-                                      style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
-                                      onClick={() => handleReplyClick(comment.author, comment.id)}
-                                    >
-                                      Reply
-                                    </button>
-                                    {!isOwnComment && comment.role !== 'Admin' && comment.role !== 'Manager' && (
-                                      <>
-                                        <button
-                                          style={{ background: 'transparent', border: 'none', color: comment.reportedByMe ? 'var(--orange-400)' : 'var(--cyan-400)', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                                          onClick={() => handleStartCommentReport(comment.id, comment.reportedByMe ? { reason: comment.myReportReason, details: comment.myReportDetails } : null)}
-                                          title={comment.reportedByMe ? "View your report" : "Report comment"}
-                                        >
-                                          <Flag size={12} fill={comment.reportedByMe ? "currentColor" : "none"} />
-                                        </button>
-                                      </>
-                                    )}
-                                    {isOwnComment && (
-                                      <>
-                                        <button
-                                          style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
-                                          onClick={() => startEditComment(post.id, comment.id, null, comment.content)}
-                                        >
-                                          Edit
-                                        </button>
-                                        <button
-                                          style={{ background: 'transparent', border: 'none', color: 'var(--red-400)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
-                                          onClick={() => handleDeleteComment(post.id, comment.id)}
-                                        >
-                                          Delete
-                                        </button>
-                                      </>
-                                    )}
+                                    {/* Actions Level 1 comment (Thời gian + Reply + Xoá) */}
+                                    <div className="flex items-center gap-3" style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4, paddingLeft: 4 }}>
+                                      <span style={{ fontSize: '0.65rem' }}>{comment.time}</span>
+                                      <button
+                                        style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
+                                        onClick={() => handleReplyClick(comment.author, comment.id)}
+                                      >
+                                        Reply
+                                      </button>
+                                      {!isOwnComment && comment.role !== 'Admin' && comment.role !== 'Manager' && (
+                                        <>
+                                          <button
+                                            style={{ background: 'transparent', border: 'none', color: comment.reportedByMe ? 'var(--orange-400)' : 'var(--cyan-400)', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                            onClick={() => handleStartCommentReport(comment.id, comment.reportedByMe ? { reason: comment.myReportReason, details: comment.myReportDetails } : null)}
+                                            title={comment.reportedByMe ? "View your report" : "Report comment"}
+                                          >
+                                            <Flag size={12} fill={comment.reportedByMe ? "currentColor" : "none"} />
+                                          </button>
+                                        </>
+                                      )}
+                                      {isOwnComment && (
+                                        <>
+                                          <button
+                                            style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
+                                            onClick={() => startEditComment(post.id, comment.id, null, comment.content)}
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            style={{ background: 'transparent', border: 'none', color: 'var(--red-400)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}
+                                            onClick={() => handleDeleteComment(post.id, comment.id)}
+                                          >
+                                            Delete
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              {/* TẦNG 2: Connected indentation for child replies (flattened layer containing all replies) */}
-                              <div style={{ paddingLeft: 36, marginTop: 6, borderLeft: ((hasReplies && !!expandedReplies[comment.id]) || showReplyBox) ? '1.5px solid var(--border-dim)' : 'none', marginLeft: 14 }}>
+                                {/* TẦNG 2: Connected indentation for child replies (flattened layer containing all replies) */}
+                                <div style={{ paddingLeft: 36, marginTop: 6, borderLeft: ((hasReplies && !!expandedReplies[comment.id]) || showReplyBox) ? '1.5px solid var(--border-dim)' : 'none', marginLeft: 14 }}>
 
-                                {/* Toggle replies button */}
-                                {hasReplies && (
-                                  <button
-                                    onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--cyan-400)',
-                                      fontWeight: 600,
-                                      cursor: 'pointer',
-                                      padding: '4px 0',
-                                      fontSize: '0.72rem',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      marginBottom: !!expandedReplies[comment.id] ? 8 : 0
-                                    }}
-                                  >
-                                    {!!expandedReplies[comment.id] ? 'Hide replies' : `View replies (${comment.replies.length})`}
-                                  </button>
-                                )}
+                                  {/* Toggle replies button */}
+                                  {hasReplies && (
+                                    <button
+                                      onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--cyan-400)',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        padding: '4px 0',
+                                        fontSize: '0.72rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        marginBottom: !!expandedReplies[comment.id] ? 8 : 0
+                                      }}
+                                    >
+                                      {!!expandedReplies[comment.id] ? 'Hide replies' : `View replies (${comment.replies.length})`}
+                                    </button>
+                                  )}
 
-                                {/* Replies listing */}
-                                {!!expandedReplies[comment.id] && comment.replies.map((reply) => {
-                                  const repRole = getRoleStyle(reply.role);
-                                  const isOwnReply = reply.author === currentUser?.full_name || reply.avatar === 'ME';
+                                  {/* Replies listing */}
+                                  {!!expandedReplies[comment.id] && comment.replies.map((reply) => {
+                                    const repRole = getRoleStyle(reply.role);
+                                    const isOwnReply = reply.author === currentUser?.full_name || reply.avatar === 'ME';
 
-                                  return (
-                                    <div key={reply.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8, position: 'relative' }}>
-                                      {renderAvatar(
-                                        (reply.author === currentUser?.full_name || reply.avatar === 'ME') ? (currentUser?.avatar || reply.avatar) : reply.avatar,
-                                        getInitials(reply.author),
-                                        24,
-                                        { border: repRole.border }
-                                      )}
-                                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                                    return (
+                                      <div key={reply.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8, position: 'relative' }}>
+                                        {renderAvatar(
+                                          (reply.author === currentUser?.full_name || reply.avatar === 'ME') ? (currentUser?.avatar || reply.avatar) : reply.avatar,
+                                          getInitials(reply.author),
+                                          24,
+                                          { border: repRole.border }
+                                        )}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
 
-                                        <div style={{ background: 'rgba(30,48,65,0.75)', padding: '6px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)', position: 'relative', width: 'fit-content', maxWidth: '100%', wordBreak: 'break-word' }}>
-                                          <div className="flex items-center gap-1.5" style={{ marginBottom: 3 }}>
-                                            <span style={{ fontWeight: 700, fontSize: '0.72rem', color: 'var(--text-primary)' }}>{reply.author}</span>
-                                            <span style={{ fontSize: '0.45rem', fontWeight: 700, padding: '0px 3px', borderRadius: 3, background: repRole.badgeBg, color: repRole.badgeColor }}>
-                                              {repRole.label}
-                                            </span>
-                                          </div>
-                                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
-                                            {editingComment && editingComment.postId === post.id && editingComment.commentId === comment.id && editingComment.replyId === reply.id ? (
-                                              <div>
-                                                <textarea className="input" rows={2} value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} />
-                                                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                                                  <button className="btn btn-sm" onClick={saveEditComment}>Save</button>
-                                                  <button className="btn btn-ghost btn-sm" onClick={cancelEditComment}>Cancel</button>
+                                          <div style={{ background: 'rgba(30,48,65,0.75)', padding: '6px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)', position: 'relative', width: 'fit-content', maxWidth: '100%', wordBreak: 'break-word' }}>
+                                            <div className="flex items-center gap-1.5" style={{ marginBottom: 3 }}>
+                                              <span style={{ fontWeight: 700, fontSize: '0.72rem', color: 'var(--text-primary)' }}>{reply.author}</span>
+                                              <span style={{ fontSize: '0.45rem', fontWeight: 700, padding: '0px 3px', borderRadius: 3, background: repRole.badgeBg, color: repRole.badgeColor }}>
+                                                {repRole.label}
+                                              </span>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                                              {editingComment && editingComment.postId === post.id && editingComment.commentId === comment.id && editingComment.replyId === reply.id ? (
+                                                <div>
+                                                  <textarea className="input" rows={2} value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} />
+                                                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                                                    <button className="btn btn-sm" onClick={saveEditComment}>Save</button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={cancelEditComment}>Cancel</button>
+                                                  </div>
                                                 </div>
+                                              ) : (
+                                                reply.content
+                                              )}
+                                            </div>
+
+                                            {/* Sub-comment likes bubble */}
+                                            {reply.likes > 0 && (
+                                              <div style={{ position: 'absolute', bottom: -8, right: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', padding: '1px 4px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.55rem', color: 'var(--text-secondary)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                                                <ThumbsUp size={10} color="var(--cyan-400)" fill="var(--cyan-400)" />
+                                                <span style={{ fontWeight: 700 }}>{reply.likes}</span>
                                               </div>
-                                            ) : (
-                                              reply.content
                                             )}
                                           </div>
 
-                                          {/* Sub-comment likes bubble */}
-                                          {reply.likes > 0 && (
-                                            <div style={{ position: 'absolute', bottom: -8, right: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', padding: '1px 4px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 2, fontSize: '0.55rem', color: 'var(--text-secondary)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                                              <span>👍</span>
-                                              <span style={{ fontWeight: 700 }}>{reply.likes}</span>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Sub-comment actions (Thời gian + Reply + Xoá) */}
-                                        <div className="flex items-center gap-3" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2, paddingLeft: 4 }}>
-                                          <span style={{ fontSize: '0.62rem' }}>{reply.time}</span>
-                                          <button
-                                            style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
-                                            onClick={() => handleReplyClick(reply.author, comment.id)}
-                                          >
-                                            Reply
-                                          </button>
-                                          {!isOwnReply && reply.role !== 'Admin' && reply.role !== 'Manager' && (
-                                            <>
-                                              <button
-                                                style={{ background: 'transparent', border: 'none', color: reply.reportedByMe ? 'var(--orange-400)' : 'var(--cyan-400)', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                                                onClick={() => handleStartCommentReport(reply.id, reply.reportedByMe ? { reason: reply.myReportReason, details: reply.myReportDetails } : null)}
-                                                title={reply.reportedByMe ? "View your report" : "Report reply"}
-                                              >
-                                                <Flag size={11} fill={reply.reportedByMe ? "currentColor" : "none"} />
-                                              </button>
-                                            </>
-                                          )}
-                                          {isOwnReply && (
-                                            <>
-                                              <button
-                                                style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
-                                                onClick={() => startEditComment(post.id, comment.id, reply.id, reply.content)}
-                                              >
-                                                Edit
-                                              </button>
-                                              <button
-                                                style={{ background: 'transparent', border: 'none', color: 'var(--red-400)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
-                                                onClick={() => handleDeleteComment(post.id, comment.id, reply.id)}
-                                              >
-                                                Delete
-                                              </button>
-                                            </>
-                                          )}
+                                          {/* Sub-comment actions (Thời gian + Reply + Xoá) */}
+                                          <div className="flex items-center gap-3" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2, paddingLeft: 4 }}>
+                                            <span style={{ fontSize: '0.62rem' }}>{reply.time}</span>
+                                            <button
+                                              style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
+                                              onClick={() => handleReplyClick(reply.author, comment.id)}
+                                            >
+                                              Reply
+                                            </button>
+                                            {!isOwnReply && reply.role !== 'Admin' && reply.role !== 'Manager' && (
+                                              <>
+                                                <button
+                                                  style={{ background: 'transparent', border: 'none', color: reply.reportedByMe ? 'var(--orange-400)' : 'var(--cyan-400)', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                  onClick={() => handleStartCommentReport(reply.id, reply.reportedByMe ? { reason: reply.myReportReason, details: reply.myReportDetails } : null)}
+                                                  title={reply.reportedByMe ? "View your report" : "Report reply"}
+                                                >
+                                                  <Flag size={11} fill={reply.reportedByMe ? "currentColor" : "none"} />
+                                                </button>
+                                              </>
+                                            )}
+                                            {isOwnReply && (
+                                              <>
+                                                <button
+                                                  style={{ background: 'transparent', border: 'none', color: 'rgba(6,182,212,0.85)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
+                                                  onClick={() => startEditComment(post.id, comment.id, reply.id, reply.content)}
+                                                >
+                                                  Edit
+                                                </button>
+                                                <button
+                                                  style={{ background: 'transparent', border: 'none', color: 'var(--red-400)', fontWeight: 600, padding: 0, cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'inherit' }}
+                                                  onClick={() => handleDeleteComment(post.id, comment.id, reply.id)}
+                                                >
+                                                  Delete
+                                                </button>
+                                              </>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
 
-                                {/* Input box for replies inside TẦNG 2 */}
-                                {showReplyBox && (
-                                  <div className="flex gap-2" style={{ marginTop: 6, background: 'rgba(18,29,40,0.1)', padding: '6px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)' }}>
-                                    {renderAvatar(
-                                      currentUser?.avatar,
-                                      currentUser?.full_name ? getInitials(currentUser.full_name) : (role === 'guest' ? 'G' : role === 'volunteer' ? 'HC' : 'ME'),
-                                      22
-                                    )}
-                                    <div style={{ flex: 1, display: 'flex', gap: 6 }}>
-                                      <input
-                                        id={`reply-input-${comment.id}`}
-                                        className="input"
-                                        style={{ borderRadius: 16, fontSize: '0.72rem', height: 26, padding: '4px 10px', background: 'rgba(18,29,40,0.4)', border: '1px solid var(--border-dim)' }}
-                                        placeholder="Reply to comments..."
-                                        value={replyInputs[comment.id] || ''}
-                                        onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') handleAddReply(post.id, comment.id);
-                                        }}
-                                      />
-                                      <button
-                                        className="btn btn-primary"
-                                        style={{ padding: 0, width: 26, height: 26, borderRadius: '50%', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        onClick={() => handleAddReply(post.id, comment.id)}
-                                      >
-                                        <Send size={10} />
-                                      </button>
+                                  {/* Input box for replies inside TẦNG 2 */}
+                                  {showReplyBox && (
+                                    <div className="flex gap-2" style={{ marginTop: 6, background: 'rgba(18,29,40,0.1)', padding: '6px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--border-dim)' }}>
+                                      {renderAvatar(
+                                        currentUser?.avatar,
+                                        currentUser?.full_name ? getInitials(currentUser.full_name) : (role === 'guest' ? 'G' : role === 'volunteer' ? 'HC' : 'ME'),
+                                        22
+                                      )}
+                                      <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+                                        <input
+                                          id={`reply-input-${comment.id}`}
+                                          className="input"
+                                          style={{ borderRadius: 16, fontSize: '0.72rem', height: 26, padding: '4px 10px', background: 'rgba(18,29,40,0.4)', border: '1px solid var(--border-dim)' }}
+                                          placeholder="Reply to comments..."
+                                          value={replyInputs[comment.id] || ''}
+                                          onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleAddReply(post.id, comment.id);
+                                          }}
+                                        />
+                                        <button
+                                          className="btn btn-primary"
+                                          style={{ padding: 0, width: 26, height: 26, borderRadius: '50%', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          onClick={() => handleAddReply(post.id, comment.id)}
+                                        >
+                                          <Send size={10} />
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
+
+                                </div>
 
                               </div>
-
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
-
-                  {showAllComments[post.id] && post.comments.length > 3 && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10, marginBottom: 6 }}>
-                      <button
-                        onClick={() => {
-                          setShowAllComments(prev => ({ ...prev, [post.id]: false }));
-                          setTimeout(() => {
-                            const el = document.getElementById(`comment-focus-${post.id}`);
-                            if (el) {
-                              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                          }, 50);
-                        }}
-                        className="btn btn-ghost btn-sm"
-                        style={{
-                          color: 'var(--cyan-400)',
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}
-                      >
-                        Collapse comments
-                      </button>
+                            );
+                          })}
+                        </>
+                      )}
                     </div>
-                  )}
+
+                    {showAllComments[post.id] && post.comments.length > 3 && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10, marginBottom: 6 }}>
+                        <button
+                          onClick={() => {
+                            setShowAllComments(prev => ({ ...prev, [post.id]: false }));
+                            setTimeout(() => {
+                              const el = document.getElementById(`comment-focus-${post.id}`);
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }, 50);
+                          }}
+                          className="btn btn-ghost btn-sm"
+                          style={{
+                            color: 'var(--cyan-400)',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          Collapse comments
+                        </button>
+                      </div>
+                    )}
 
                     {/* Main Comment input sticky at the bottom */}
                     <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 12 }}>
@@ -1801,10 +1805,10 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
             Showing Page {currentPage} of {totalPages}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button 
-              className="btn btn-ghost btn-sm" 
+            <button
+              className="btn btn-ghost btn-sm"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              disabled={currentPage === 1} 
+              disabled={currentPage === 1}
               onClick={() => {
                 setCurrentPage(p => Math.max(p - 1, 1));
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1825,10 +1829,10 @@ export default function CommunityForum({ role = 'user', onRedirectToRegister }) 
                 {i + 1}
               </button>
             ))}
-            <button 
-              className="btn btn-ghost btn-sm" 
+            <button
+              className="btn btn-ghost btn-sm"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              disabled={currentPage === totalPages} 
+              disabled={currentPage === totalPages}
               onClick={() => {
                 setCurrentPage(p => Math.min(p + 1, totalPages));
                 window.scrollTo({ top: 0, behavior: 'smooth' });

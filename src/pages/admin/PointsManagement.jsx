@@ -238,9 +238,9 @@ export default function PointsManagement() {
   const filteredUsers = users.filter(u => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (u.name && u.name.toLowerCase().includes(q)) || 
-           (u.email && u.email.toLowerCase().includes(q)) || 
-           (u.phone && u.phone.toLowerCase().includes(q));
+    return (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.toLowerCase().includes(q));
   });
 
   return (
@@ -275,45 +275,44 @@ export default function PointsManagement() {
             <>
               <div className="table-wrapper" style={{ overflowX: 'auto' }}>
                 <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Name</th>
-                    <th>Area / Info</th>
-                    <th>Points</th>
-                    <th>Badge</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((row, index) => (
-                    <tr key={row.id || index}>
-                      <td style={{ fontFamily: 'var(--font-mono)' }}>#{(leaderboardPage - 1) * leaderboardLimit + index + 1}</td>
-                      <td style={{ fontWeight: 700 }}>
-                        <div className="flex items-center" style={{ gap: 8 }}>
-                          {row.avatar_url ? (
-                            <img src={row.avatar_url} alt={row.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <User size={14} color="var(--text-muted)" />
-                            </div>
-                          )}
-                          <span>{row.name}</span>
-                        </div>
-                      </td>
-                      <td>{row.info || '-'}</td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)', fontWeight: 700 }}>{row.points}</td>
-                      <td>
-                        <span className={`badge ${
-                          row.badge === 'VOLUNTEER' ? 'badge-red' : 
-                          row.badge === 'WORKSHOP' ? 'badge-gold' : 
-                          'badge-cyan'
-                        }`}>{row.badge}</span>
-                      </td>
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Name</th>
+                      <th>Area / Info</th>
+                      <th>Points</th>
+                      <th>Badge</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((row, index) => (
+                      <tr key={row.id || index}>
+                        <td style={{ fontFamily: 'var(--font-mono)' }}>#{(leaderboardPage - 1) * leaderboardLimit + index + 1}</td>
+                        <td style={{ fontWeight: 700 }}>
+                          <div className="flex items-center" style={{ gap: 8 }}>
+                            {row.avatar_url ? (
+                              <img src={row.avatar_url} alt={row.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <User size={14} color="var(--text-muted)" />
+                              </div>
+                            )}
+                            <span>{row.name}</span>
+                          </div>
+                        </td>
+                        <td>{row.info ? row.info.replace(/Wading_Motorcycle/g, 'Amphibious Motorbike').replace(/Pickup_Truck/g, 'Pickup Truck').replace(/Canoe/g, 'Canoe / Boat') : '-'}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)', fontWeight: 700 }}>{row.points}</td>
+                        <td>
+                          <span className={`badge ${row.badge === 'VOLUNTEER' ? 'badge-red' :
+                              row.badge === 'WORKSHOP' ? 'badge-gold' :
+                                'badge-cyan'
+                            }`}>{row.badge}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               {/* Pagination */}
               <div style={{
@@ -367,7 +366,7 @@ export default function PointsManagement() {
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div className="card p-6">
             <div className="section-title" style={{ marginBottom: 16 }}>Points addition policy</div>
-            
+
             <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 32 }}>
               <div>
                 <PolicySlider label="New report" value={policy.reportSubmit} min={1} max={5} unit=" pts" color="var(--blue-400)" onChange={(v) => setPolicy(prev => ({ ...prev, reportSubmit: v }))} disabled={!isAdmin} />
@@ -416,7 +415,7 @@ export default function PointsManagement() {
                       <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)', fontWeight: 700 }}>{r.points_cost}</td>
                       <td>{badgeText ? <span className="badge badge-cyan">{badgeText}</span> : '-'}</td>
                       <td>
-                        <button className="btn btn-primary btn-sm" style={{ marginRight: 8 }} onClick={() => openSendModal(r)}><Gift size={12} style={{ marginRight: 4 }}/> Send</button>
+                        <button className="btn btn-primary btn-sm" style={{ marginRight: 8 }} onClick={() => openSendModal(r)}><Gift size={12} style={{ marginRight: 4 }} /> Send</button>
                         {isAdmin && (
                           <button className="btn btn-ghost btn-sm" onClick={() => removeReward(r._id)}><Trash2 size={12} /> Delete</button>
                         )}
@@ -448,12 +447,12 @@ export default function PointsManagement() {
               <div className="section-title">Send Reward: {selectedReward.name}</div>
               <button className="btn btn-ghost" onClick={closeSendModal}><XCircle size={20} /></button>
             </div>
-            
+
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input 
-                className="input" 
-                placeholder="Search by name, email or phone..." 
+              <input
+                className="input"
+                placeholder="Search by name, email or phone..."
                 style={{ paddingLeft: 36, width: '100%' }}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -480,7 +479,7 @@ export default function PointsManagement() {
                     let bgColor = 'rgba(59,130,246,0.15)';
                     let color = '#3b82f6';
                     let label = 'User';
-                    
+
                     if (r === 'volunteer') {
                       bgColor = 'rgba(239,68,68,0.15)';
                       color = '#ef4444';
@@ -490,7 +489,7 @@ export default function PointsManagement() {
                       color = '#eab308';
                       label = r === 'workshop_staff' ? 'Workshop (Staff)' : 'Workshop (Owner)';
                     }
-                    
+
                     return (
                       <tr key={u.id} onClick={() => toggleUserSelect(u.id)} style={{ cursor: 'pointer' }}>
                         <td><input type="checkbox" checked={selectedUsers.includes(u.id)} readOnly /></td>

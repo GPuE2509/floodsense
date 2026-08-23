@@ -217,7 +217,7 @@ export default function VolunteerProfile() {
                 <XCircle size={13} /> Cancel volunteer registration
               </button>
             </div>
-            </div>
+          </div>
 
           {/* Vehicle Info */}
           {profile.vehicleType && (
@@ -245,8 +245,8 @@ export default function VolunteerProfile() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vehicle type</div>
                     <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{
                       profile.vehicleType === 'Canoe' ? "Canoe / Boat" :
-                        profile.vehicleType === 'Pickup_Truck' ? "Pickup truck" :
-                          profile.vehicleType === 'Wading_Motorcycle' ? "Amphibious motorbike" : "Other"
+                        profile.vehicleType === 'Pickup_Truck' ? "Pickup Truck" :
+                          profile.vehicleType === 'Wading_Motorcycle' ? "Amphibious Motorbike" : "Other"
                     }</div>
                   </div>
                   <div>

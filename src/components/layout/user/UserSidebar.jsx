@@ -107,7 +107,7 @@ export default function UserSidebar({ activePage, onNavigate, collapsed, onToggl
     {
       section: "REPORT & RESCUE",
       items: filterSectionItems([
-        { id: 'user-reports', label: "Community reporting", icon: FileText, badge: null },
+        { id: 'user-reports', label: "Community Reporting", icon: FileText, badge: null },
         { id: 'user-sos', label: "SOS & Rescue", icon: ShieldAlert, badge: null },
       ]),
     },
@@ -134,9 +134,9 @@ export default function UserSidebar({ activePage, onNavigate, collapsed, onToggl
     section: "COMMUNITY",
     items: filterSectionItems([
       { id: 'user-notifications', label: "Notifications & Chat", icon: Bell, badge: unreadCount },
-      { id: 'user-forum', label: "Forum", icon: MessageSquare, badge: null },
+      { id: 'user-forum', label: "Community Forum", icon: MessageSquare, badge: null },
       { id: 'user-guidelines', label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
-      { id: 'user-rewards', label: "Honor board", icon: Trophy, badge: null },
+      { id: 'user-rewards', label: "Honor Board", icon: Trophy, badge: null },
     ]),
   });
 
@@ -197,9 +197,9 @@ export default function UserSidebar({ activePage, onNavigate, collapsed, onToggl
           {collapsed
             ? <ChevronRight size={16} color="var(--text-muted)" />
             : <>
-                <ChevronLeft size={16} color="var(--text-muted)" />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
-              </>
+              <ChevronLeft size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
+            </>
           }
         </button>
       </div>

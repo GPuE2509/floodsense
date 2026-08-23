@@ -12,12 +12,12 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 const TruncatedText = ({ text }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   if (!text) return null;
-  
+
   const lines = text.split('\n');
   const isLong = text.length > 400 || lines.length > 5;
-  
+
   const displayText = isExpanded ? text : (isLong ? (lines.length > 5 ? lines.slice(0, 5).join('\n') + '...' : text.slice(0, 400) + '...') : text);
-  
+
   return (
     <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
       <div style={{ maxHeight: isExpanded ? '400px' : 'none', overflowY: isExpanded ? 'auto' : 'visible', paddingRight: isExpanded ? 4 : 0 }}>
@@ -37,24 +37,24 @@ const TruncatedText = ({ text }) => {
 const TruncatedCommentText = ({ text }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   if (!text) return null;
-  
+
   const lines = text.split('\n');
   const isLong = text.length > 200 || lines.length > 3;
-  
+
   const displayText = isExpanded ? text : (isLong ? (lines.length > 3 ? lines.slice(0, 3).join('\n') + '...' : text.slice(0, 200) + '...') : text);
-  
+
   return (
     <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
       <span>{displayText}</span>
       {isLong && (
-        <button 
-          onClick={(e) => { e.preventDefault(); setIsExpanded(!isExpanded); }} 
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: 'var(--blue-400)', 
-            fontWeight: 600, 
-            cursor: 'pointer', 
+        <button
+          onClick={(e) => { e.preventDefault(); setIsExpanded(!isExpanded); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--blue-400)',
+            fontWeight: 600,
+            cursor: 'pointer',
             padding: 0,
             marginLeft: 6,
             fontSize: '0.8rem',
@@ -78,11 +78,11 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
   const renderPostImages = (images) => {
     if (!images || images.length === 0) return null;
     const count = images.length;
-    
+
     // Single image
     if (count === 1) {
       return (
-        <div 
+        <div
           onClick={() => onImageClick(images[0])}
           style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginTop: 8, cursor: 'pointer', maxWidth: '100%' }}
         >
@@ -90,14 +90,14 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
         </div>
       );
     }
-    
+
     // Two images
     if (count === 2) {
       return (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8, maxWidth: '100%' }}>
           {images.map((img, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               onClick={() => onImageClick(img)}
               style={{ height: 180, borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-subtle)', cursor: 'pointer', background: '#070c14' }}
             >
@@ -112,7 +112,7 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
     if (count === 3) {
       return (
         <div style={{ display: 'grid', gridTemplateRows: '200px 120px', gap: 6, marginTop: 8, maxWidth: '100%' }}>
-          <div 
+          <div
             onClick={() => onImageClick(images[0])}
             style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-subtle)', cursor: 'pointer', background: '#070c14' }}
           >
@@ -120,12 +120,12 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {images.slice(1).map((img, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 onClick={() => onImageClick(img)}
                 style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-subtle)', cursor: 'pointer', background: '#070c14' }}
               >
-                <img src={img} alt={`Attachment ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={img} alt={`Attachment ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ))}
           </div>
@@ -143,8 +143,8 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
           const isLast = idx === 3;
           const showOverlay = isLast && remainingCount > 0;
           return (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               onClick={() => onImageClick(img)}
               style={{ height: 140, borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-subtle)', position: 'relative', cursor: 'pointer', background: '#070c14' }}
             >
@@ -168,10 +168,10 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
         borderLeft: post.hasViolation
           ? '3px solid var(--red-500)'
           : post.isPinned
-          ? '3px solid var(--blue-primary)'
-          : post.status === 'approved'
-          ? '3px solid var(--green-500)'
-          : '3px solid rgba(71,85,105,0.4)',
+            ? '3px solid var(--blue-primary)'
+            : post.status === 'approved'
+              ? '3px solid var(--green-500)'
+              : '3px solid rgba(71,85,105,0.4)',
         transition: 'all 0.3s',
         animation: 'slide-in-up 0.35s ease-out',
       }}
@@ -229,9 +229,9 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
                 <div className="flex items-center" style={{ gap: 6, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   <Heart size={13} style={{ color: 'var(--red-400)' }} /> {post.hearts || 0}
                 </div>
-                <button 
+                <button
                   onClick={() => setShowComments(!showComments)}
-                  className="flex items-center gap-2" 
+                  className="flex items-center gap-2"
                   style={{ fontSize: '0.75rem', color: showComments ? 'var(--blue-500)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   <MessageSquare size={12} /> {postComments.length} comments {showComments ? <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={12} />}
@@ -248,24 +248,24 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
               {(() => {
                 const showPostReports = post.reportCount > 0 && activeTab !== 'reported_comments';
                 const showCommentReports = postComments?.some(c => c.reportCount > 0) && activeTab !== 'reported';
-                
+
                 if (!showPostReports && !showCommentReports) return null;
 
                 return (
                   <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255, 59, 48, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 59, 48, 0.2)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--red-500)', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <Flag size={14} /> ⚠️ 
+                        <Flag size={14} /> ⚠️
                         {showPostReports && <span>{post.reportCount} post reports</span>}
                         {showPostReports && showCommentReports && <span> • </span>}
                         {showCommentReports && <span>{postComments.filter(c => c.reportCount > 0).length} reported comments</span>}
                       </div>
                       {((showPostReports && post.reports && post.reports.length > 0) || (showCommentReports && postComments && postComments.some(c => c.reports && c.reports.length > 0))) && (
-                        <button 
+                        <button
                           onClick={() => setReportsExpanded(!reportsExpanded)}
                           style={{ fontSize: '0.75rem', color: 'var(--red-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                         >
-                          {reportsExpanded ? <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={12} />} 
+                          {reportsExpanded ? <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={12} />}
                           {reportsExpanded ? 'Collapse' : 'View Details'}
                         </button>
                       )}
@@ -285,7 +285,7 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
                             </span>
                           </li>
                         ))}
-                        {showCommentReports && postComments && postComments.filter(c => c.reportCount > 0).map(c => 
+                        {showCommentReports && postComments && postComments.filter(c => c.reportCount > 0).map(c =>
                           c.reports && Object.values(c.reports.reduce((acc, r) => {
                             if (!acc[r.reason]) acc[r.reason] = { reason: r.reason, count: 0 };
                             acc[r.reason].count += 1;
@@ -311,46 +311,68 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
           {/* Actions */}
           <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
             {post.status === 'pending' && (
-              <button className="btn btn-success btn-sm" onClick={() => onApprove(post.id)} style={{ padding: '5px 10px' }}>
-                <CheckCircle size={12} /> Browse
-              </button>
-            )}
-            {post.status === 'pending' && (
-              <button className="btn btn-danger btn-sm" onClick={() => onReject(post.id)} style={{ padding: '5px 10px' }}>
-                <X size={12} /> Reject
-              </button>
-            )}
-            {post.status !== 'pending' && post.reportCount > 0 && activeTab !== 'pinned' && activeTab !== 'reported_comments' && (
-              <button className="btn btn-danger btn-sm" onClick={() => onDelete(post.id)} style={{ padding: '5px 10px' }}>
-                <Trash2 size={12} /> Delete
-              </button>
-            )}
-            {post.reportCount > 0 && activeTab !== 'reported_comments' && (
-              <button className="btn btn-ghost btn-sm" onClick={() => onDismiss(post.id)} style={{ padding: '5px 10px', color: 'var(--text-muted)' }} title="Dismiss reports">
-                <ShieldCheck size={12} /> Dismiss
-              </button>
-            )}
-            {post.status === 'approved' && activeTab !== 'reported_comments' && (
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => onPin(post.id)}
-                style={{ padding: '5px 10px', color: post.isPinned ? 'var(--blue-400)' : 'var(--text-muted)' }}
-                title={post.isPinned ? "Unpin" : "Pin the article"}
-              >
-                {post.isPinned ? <PinOff size={13} /> : <Pin size={13} />}
-                {post.isPinned ? "Unpin" : 'Pin'}
-              </button>
-            )}
-            {post.isPinned && post.status !== 'rejected' && activeTab === 'pinned' && (post.authorRole === 'Admin' || post.authorRole === 'Manager') && (
               <>
-                <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(post.id)} style={{ padding: '5px 10px' }}>
-                  <PenSquare size={12} /> Edit
+                <button className="btn btn-success btn-sm" onClick={() => onApprove(post.id)} style={{ padding: '5px 10px' }}>
+                  <CheckCircle size={12} /> Approve
                 </button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDeleteOfficialPinned && onDeleteOfficialPinned(post.id)} style={{ padding: '5px 10px' }}>
-                  <Trash2 size={12} /> Delete
+                <button className="btn btn-danger btn-sm" onClick={() => onReject(post.id)} style={{ padding: '5px 10px' }}>
+                  <X size={12} /> Reject
                 </button>
               </>
             )}
+
+            {(() => {
+              const isOfficialPinned = post.isPinned && activeTab === 'pinned' && (post.isOfficial === true);
+              const canDeleteReported = post.status !== 'pending' && post.reportCount > 0;
+
+              return (
+                <>
+                  {/* Unpin / Pin button */}
+                  {post.status === 'approved' && activeTab !== 'reported_comments' && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => onPin(post.id)}
+                      style={{ padding: '5px 10px', color: post.isPinned ? 'var(--blue-400)' : 'var(--text-muted)' }}
+                      title={post.isPinned ? "Unpin" : "Pin the article"}
+                    >
+                      {post.isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+                      {post.isPinned ? "Unpin" : 'Pin'}
+                    </button>
+                  )}
+
+                  {/* Edit button: ONLY for official Admin/Manager pinned post in Pinned tab */}
+                  {isOfficialPinned && (
+                    <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(post.id)} style={{ padding: '5px 10px' }}>
+                      <PenSquare size={12} /> Edit
+                    </button>
+                  )}
+
+                  {/* Delete button: ONLY for official Admin pinned post OR reported post */}
+                  {(isOfficialPinned || canDeleteReported) && (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => {
+                        if (isOfficialPinned && post.reportCount === 0) {
+                          onDeleteOfficialPinned && onDeleteOfficialPinned(post.id);
+                        } else {
+                          onDelete(post.id);
+                        }
+                      }}
+                      style={{ padding: '5px 10px' }}
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  )}
+
+                  {/* Dismiss reports button */}
+                  {post.reportCount > 0 && activeTab !== 'reported_comments' && (
+                    <button className="btn btn-ghost btn-sm" onClick={() => onDismiss(post.id)} style={{ padding: '5px 10px', color: 'var(--text-muted)' }} title="Dismiss reports">
+                      <ShieldCheck size={12} /> Dismiss
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -368,7 +390,7 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
                   const parentIdsToShow = new Set(
                     (showAllComments ? parentComments : parentComments.slice(-3)).map(c => c.id)
                   );
-                  
+
                   return (
                     <>
                       {hasManyComments && (
@@ -399,16 +421,16 @@ function PostCard({ post, postComments = [], onPin, onDelete, onDeleteOfficialPi
                         if (comment.parentId && !expandedReplies[comment.parentId]) {
                           return null;
                         }
-                        
+
                         const repliesCount = postComments.filter(c => c.parentId === comment.id).length;
                         const isRepliesExpanded = !!expandedReplies[comment.id];
-                        
+
                         return (
                           <React.Fragment key={comment.id}>
-                            <CommentCard 
-                              comment={comment} 
-                              onDelete={onCommentDelete} 
-                              onDismiss={onCommentDismiss} 
+                            <CommentCard
+                              comment={comment}
+                              onDelete={onCommentDelete}
+                              onDismiss={onCommentDismiss}
                               activeTab={activeTab}
                             />
                             {!comment.parentId && repliesCount > 0 && (
@@ -494,7 +516,7 @@ function CommentCard({ comment, onDelete, onDismiss, activeTab }) {
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{comment.time}</span>
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', gap: 6 }}>
             {comment.reportCount > 0 && (
               <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--green-500)', background: 'rgba(52, 199, 89, 0.1)' }} onClick={() => onDismiss(comment.id)} title="Dismiss Reports">
@@ -525,11 +547,11 @@ function CommentCard({ comment, onDelete, onDismiss, activeTab }) {
                 <Flag size={14} /> ⚠️ {comment.reportCount} reports
               </div>
               {comment.reports && comment.reports.length > 0 && (
-                <button 
+                <button
                   onClick={() => setReportsExpanded(!reportsExpanded)}
                   style={{ fontSize: '0.75rem', color: 'var(--red-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                 >
-                  {reportsExpanded ? <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={12} />} 
+                  {reportsExpanded ? <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={12} />}
                   {reportsExpanded ? 'Collapse' : 'View Details'}
                 </button>
               )}
@@ -589,7 +611,7 @@ export default function ForumModeration() {
 
     const connectWebSocket = () => {
       ws = new WebSocket(wsUrl);
-      
+
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -609,7 +631,7 @@ export default function ForumModeration() {
         console.log('WebSocket closed in Admin Forum Moderation, reconnecting in 3s...');
         reconnectTimeout = setTimeout(connectWebSocket, 3000);
       };
-      
+
       ws.onerror = (err) => {
         console.error('WebSocket error in Admin Forum Moderation', err);
         ws.close(); // trigger onclose
@@ -617,7 +639,7 @@ export default function ForumModeration() {
     };
 
     connectWebSocket();
-    
+
     return () => {
       clearTimeout(reconnectTimeout);
       if (ws && (ws.readyState === 1 || ws.readyState === 0)) {
@@ -647,6 +669,7 @@ export default function ForumModeration() {
           reports: p.reports || [],
           status: p.status,
           isPinned: p.is_pinned,
+          isOfficial: p.is_official || false,
           pinnedAt: p.pinned_at ? new Date(p.pinned_at).getTime() : 0,
           hasViolation: p.reportCount > 3
         }));
@@ -677,6 +700,7 @@ export default function ForumModeration() {
           reports: p.reports || [],
           status: p.status,
           isPinned: p.is_pinned,
+          isOfficial: p.is_official || false,
           pinnedAt: p.pinned_at ? new Date(p.pinned_at).getTime() : 0,
           hasViolation: p.reportCount > 3
         }));
@@ -821,16 +845,16 @@ export default function ForumModeration() {
     } else if (activeTab === 'reported_comments') {
       const reportedPostIds = new Set(reportedComments.map(c => c.postId));
       result = posts.filter(p => reportedPostIds.has(p.id));
-      
+
       // Sort these posts by the latest reported comment they contain
       result.sort((a, b) => {
         const commentsA = reportedComments.filter(c => c.postId === a.id);
-        const latestA = commentsA.length > 0 ? Math.max(...commentsA.map(c => 
+        const latestA = commentsA.length > 0 ? Math.max(...commentsA.map(c =>
           c.reports?.length > 0 ? new Date(c.reports[0].created_at || 0).getTime() : 0
         )) : 0;
 
         const commentsB = reportedComments.filter(c => c.postId === b.id);
-        const latestB = commentsB.length > 0 ? Math.max(...commentsB.map(c => 
+        const latestB = commentsB.length > 0 ? Math.max(...commentsB.map(c =>
           c.reports?.length > 0 ? new Date(c.reports[0].created_at || 0).getTime() : 0
         )) : 0;
 
@@ -844,7 +868,7 @@ export default function ForumModeration() {
         result = posts.filter(p => p.status === 'approved');
       }
     }
-    
+
     // Only apply pinned sort for posts and pinned tabs
     if (activeTab === 'posts' || activeTab === 'pinned') {
       return [...result].sort((a, b) => {
@@ -973,7 +997,7 @@ export default function ForumModeration() {
     }
     if (isEditingPinnedSubmit) return;
     setIsEditingPinnedSubmit(true);
-    
+
     try {
       const payload = {
         title: editPinnedTitle,
@@ -981,7 +1005,7 @@ export default function ForumModeration() {
         category: editPinnedCategory,
         images: editPinnedImages
       };
-      
+
       const res = await apiService.put(`/forum/posts/${editingPinnedId}`, payload);
       if (res && res.success) {
         setPosts(prev => prev.map(p => p.id === editingPinnedId ? { ...p, title: editPinnedTitle, category: editPinnedCategory, content: editPinnedContent, images: editPinnedImages } : p));
@@ -1016,7 +1040,7 @@ export default function ForumModeration() {
         category: newPinnedCategory,
         images: newPinnedImages
       };
-      
+
       const res = await apiService.post('/forum/posts/official', payload);
       if (res && res.success) {
         setShowAddPinnedModal(false);
@@ -1057,7 +1081,7 @@ export default function ForumModeration() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, marginBottom: 24 }}>
         {[
           { label: "Posts", value: posts.length, color: 'var(--green-400)' },
           { label: "Reported Posts", value: reportedPosts.length, color: 'var(--red-400)' },
@@ -1065,9 +1089,9 @@ export default function ForumModeration() {
           { label: "Pinned Posts", value: posts.filter(p => p.isPinned).length, color: 'var(--blue-400)' },
           { label: "Pending Moderation", value: posts.filter(p => p.status === 'pending').length, color: 'var(--orange-400)' },
         ].map(s => (
-          <div key={s.label} className="card p-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, minWidth: 0 }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.value}</div>
-            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', wordBreak: 'break-word' }}>{s.label}</div>
+          <div key={s.label} className="card p-4" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{s.value}</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', lineHeight: 1.25, wordBreak: 'break-word' }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -1093,13 +1117,13 @@ export default function ForumModeration() {
       {/* Filter bar (posts tab) */}
       {activeTab === 'posts' && (
         <div className="flex gap-2" style={{ marginBottom: 16 }}>
-          <button 
+          <button
             className={`btn ${postFilter === 'all' ? 'btn-primary' : 'btn-ghost'} btn-sm`}
             onClick={() => setPostFilter('all')}
           >
             All ({posts.filter(p => p.status === 'approved').length})
           </button>
-          <button 
+          <button
             className={`btn ${postFilter === 'pending' ? 'btn-primary' : 'btn-ghost'} btn-sm`}
             onClick={() => setPostFilter('pending')}
           >
@@ -1114,8 +1138,8 @@ export default function ForumModeration() {
           <span style={{ fontSize: '0.875rem', color: 'var(--blue-400)', fontWeight: 600 }}>
             Selected {selectedBatch.length} article
           </span>
-          <button className="btn btn-success btn-sm" onClick={batchApprove}><CheckCircle size={12} /> Browse all</button>
-          <button className="btn btn-danger btn-sm" onClick={batchDelete}><Trash2 size={12} /> Delete all</button>
+          <button className="btn btn-success btn-sm" onClick={batchApprove}><CheckCircle size={12} /> Approve all</button>
+          <button className="btn btn-danger btn-sm" onClick={batchDelete}><Trash2 size={12} /> Reject all</button>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBatch([])}><X size={12} /> Deselect</button>
         </div>
       )}
@@ -1201,9 +1225,9 @@ export default function ForumModeration() {
                   <option value="Q&A">Q&A</option>
                 </select>
 
-                <input 
-                  className="input" 
-                  placeholder="Enter announcement title..." 
+                <input
+                  className="input"
+                  placeholder="Enter announcement title..."
                   value={editPinnedTitle}
                   onChange={(e) => setEditPinnedTitle(e.target.value)}
                   style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12, padding: '12px 16px' }}
@@ -1317,17 +1341,17 @@ export default function ForumModeration() {
           </div>
         </div>
       )}
-      
+
       <ConfirmModal
         isOpen={confirmModal.open}
         title={confirmModal.type.startsWith('delete') ? 'Delete Content' : confirmModal.type === 'reject' ? 'Reject Post' : 'Dismiss Reports'}
-        message={confirmModal.type.startsWith('delete') 
-          ? (confirmModal.type === 'delete-official' 
-              ? 'Are you sure you want to delete this official pinned post? This action cannot be undone.' 
-              : 'Are you sure you want to delete this violating content? This action cannot be undone.')
+        message={confirmModal.type.startsWith('delete')
+          ? (confirmModal.type === 'delete-official'
+            ? 'Are you sure you want to delete this official pinned post? This action cannot be undone.'
+            : 'Are you sure you want to delete this violating content? This action cannot be undone.')
           : confirmModal.type === 'reject'
-              ? 'Are you sure you want to reject this post? The author will be notified.'
-              : 'Are you sure you want to dismiss all reports for this content?'}
+            ? 'Are you sure you want to reject this post? The author will be notified.'
+            : 'Are you sure you want to dismiss all reports for this content?'}
         confirmText="Confirm"
         loading={confirmModal.loading}
         onConfirm={async () => {
@@ -1352,21 +1376,21 @@ export default function ForumModeration() {
 
       {/* Image Lightbox */}
       {lightboxImage && (
-        <div 
-          className="modal-overlay" 
+        <div
+          className="modal-overlay"
           onClick={() => setLightboxImage(null)}
           style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.95)' }}
         >
-          <button 
+          <button
             onClick={() => setLightboxImage(null)}
             style={{ position: 'absolute', top: 24, right: 24, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <X size={20} />
           </button>
-          <img 
-            src={lightboxImage} 
-            alt="Enlarged preview" 
-            style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain' }} 
+          <img
+            src={lightboxImage}
+            alt="Enlarged preview"
+            style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain' }}
           />
         </div>
       )}
@@ -1401,9 +1425,9 @@ export default function ForumModeration() {
                 <option value="Q&A">Q&A</option>
               </select>
 
-              <input 
-                className="input" 
-                placeholder="Enter announcement title..." 
+              <input
+                className="input"
+                placeholder="Enter announcement title..."
                 value={newPinnedTitle}
                 onChange={(e) => setNewPinnedTitle(e.target.value)}
                 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12, padding: '12px 16px' }}

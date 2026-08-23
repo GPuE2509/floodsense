@@ -542,14 +542,14 @@ export default function WorkshopShop() {
   const addService = async () => {
     let errors = {};
     if (!newService.name.trim()) errors.name = "Please enter a service name.";
-    
+
     const priceVal = parseFloat(newService.price.toString().replace(/\D/g, ''));
     if (!newService.price.toString().trim() || isNaN(priceVal)) {
       errors.price = "Please enter a price.";
     } else if (priceVal < 1000) {
       errors.price = "Price must be at least 1,000 VND.";
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setNewServiceErrors(errors);
       return;
@@ -604,7 +604,7 @@ export default function WorkshopShop() {
     } else if (priceVal < 1000) {
       errors.price = "Price must be at least 1,000 VND.";
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setEditingServiceErrors(errors);
       return;
@@ -764,21 +764,21 @@ export default function WorkshopShop() {
               </div>
 
               {/* Upload cover photo */}
-              <label 
-                style={{ 
-                  position: 'absolute', 
-                  top: 12, 
-                  right: 12, 
-                  zIndex: 2, 
-                  width: 36, 
-                  height: 36, 
-                  borderRadius: '50%', 
-                  background: 'rgba(0, 0, 0, 0.6)', 
+              <label
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  zIndex: 2,
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.6)',
                   backdropFilter: 'blur(4px)',
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: '#ffffff', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
                   cursor: isUploadingCover ? 'not-allowed' : 'pointer',
                   border: '1px solid rgba(255,255,255,0.2)',
                   transition: 'all 0.2s ease',
@@ -951,10 +951,10 @@ export default function WorkshopShop() {
                   <input className="input" maxLength={30} value={newService.unit} onChange={e => setNewService(p => ({ ...p, unit: e.target.value }))} placeholder="e.g. turn, piece..." />
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                     {UNIT_SUGGESTIONS.filter(u => u.toLowerCase().includes((newService.unit || '').toLowerCase())).map(u => (
-                      <button 
-                        key={u} 
+                      <button
+                        key={u}
                         type="button"
-                        className="badge" 
+                        className="badge"
                         style={{ cursor: 'pointer', background: newService.unit === u ? 'var(--cyan-400)' : 'rgba(255,255,255,0.05)', color: newService.unit === u ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-dim)', fontSize: '0.6rem', padding: '2px 5px' }}
                         onClick={() => setNewService(p => ({ ...p, unit: u }))}
                       >
@@ -1000,10 +1000,10 @@ export default function WorkshopShop() {
                             <input className="input" maxLength={30} value={editingServiceData.unit} onChange={e => setEditingServiceData(p => ({ ...p, unit: e.target.value }))} placeholder="e.g. turn, piece..." />
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                               {UNIT_SUGGESTIONS.filter(u => u.toLowerCase().includes((editingServiceData.unit || '').toLowerCase())).map(u => (
-                                <button 
-                                  key={u} 
+                                <button
+                                  key={u}
                                   type="button"
-                                  className="badge" 
+                                  className="badge"
                                   style={{ cursor: 'pointer', background: editingServiceData.unit === u ? 'var(--cyan-400)' : 'rgba(255,255,255,0.05)', color: editingServiceData.unit === u ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-dim)', fontSize: '0.6rem', padding: '2px 5px' }}
                                   onClick={() => setEditingServiceData(p => ({ ...p, unit: u }))}
                                 >
@@ -1037,7 +1037,7 @@ export default function WorkshopShop() {
                             <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)', marginBottom: 3, wordBreak: 'break-word' }}>{s.service_name || s.name}</div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 4, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{s.desc}</div>
                             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f59e0b', fontSize: '0.92rem', wordBreak: 'break-word' }}>
-                              {parseInt((s.base_price?.toString() || s.price?.toString() || '0').replace(/\D/g, '')).toLocaleString('vi-VN')}D / {s.unit || 'turn'}
+                              {parseInt((s.base_price?.toString() || s.price?.toString() || '0').replace(/\D/g, '')).toLocaleString('vi-VN')} VND / {s.unit || 'turn'}
                             </div>
                           </div>
                           {isOwner && (
@@ -1078,7 +1078,7 @@ export default function WorkshopShop() {
                           Previous
                         </button>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          Page 
+                          Page
                           <input
                             type="number"
                             min={1}

@@ -11,27 +11,27 @@ const navItems = [
   {
     section: "OVERVIEW",
     items: [
-      { id: 'ws-dashboard',   label: "Live Map & Weather",     icon: LayoutDashboard, badge: null },
+      { id: 'ws-dashboard', label: "Live Map & Weather", icon: LayoutDashboard, badge: null },
     ],
   },
   {
     section: "CAR REPAIR SHOP",
     items: [
-      { id: 'ws-shop',        label: "Workshop Profile & Services", icon: Store,        badge: null },
-      { id: 'ws-tasks',       label: "Vehicle repair form",            icon: ClipboardList, badge: null  },
-      { id: 'ws-mechanics',   label: "Workshop Staff",    icon: Users,        badge: null },
-      { id: 'ws-reviews',     label: "Customer reviews",   icon: Star,         badge: null  },
+      { id: 'ws-shop', label: "Workshop Profile & Services", icon: Store, badge: null },
+      { id: 'ws-tasks', label: "Vehicle Repair Form", icon: ClipboardList, badge: null },
+      { id: 'ws-mechanics', label: "Workshop Staff", icon: Users, badge: null },
+      { id: 'ws-reviews', label: "Customer Reviews", icon: Star, badge: null },
     ],
   },
   {
     section: "User",
     items: [
-      { id: 'user-reports',       label: "Community reporting",        icon: FileText,        badge: null   },
-      { id: 'user-sos',           label: "SOS & Rescue",             icon: ShieldAlert,     badge: null   },
-      { id: 'user-notifications', label: "Notifications & Chat",          icon: Bell,            badge: 4   },
-      { id: 'user-forum',         label: "Community forum",       icon: MessageSquare,   badge: null },
-      { id: 'user-guidelines',    label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
-      { id: 'user-rewards',       label: "Honor board",               icon: Trophy,          badge: null },
+      { id: 'user-reports', label: "Community Reporting", icon: FileText, badge: null },
+      { id: 'user-sos', label: "SOS & Rescue", icon: ShieldAlert, badge: null },
+      { id: 'user-notifications', label: "Notifications & Chat", icon: Bell, badge: 4 },
+      { id: 'user-forum', label: "Community Forum", icon: MessageSquare, badge: null },
+      { id: 'user-guidelines', label: "Emergency Guidelines", icon: ShieldPlus, badge: null },
+      { id: 'user-rewards', label: "Honor Board", icon: Trophy, badge: null },
     ],
   },
 ];
@@ -147,21 +147,21 @@ export default function WorkshopSidebar({ activePage, onNavigate, collapsed, onT
               const isActive = activePage === item.id;
               return (
                 <button
-                   key={item.id}
-                   className={`nav-item ${isActive ? 'active' : ''}`}
-                   onClick={() => onNavigate(item.id)}
-                   title={collapsed ? item.label : ''}
-                   style={isActive && section.section === "CAR REPAIR SHOP"
-                     ? { borderLeft: '3px solid #f59e0b', background: 'rgba(217,119,6,0.1)' }
-                     : {}}
+                  key={item.id}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => onNavigate(item.id)}
+                  title={collapsed ? item.label : ''}
+                  style={isActive && section.section === "CAR REPAIR SHOP"
+                    ? { borderLeft: '3px solid #f59e0b', background: 'rgba(217,119,6,0.1)' }
+                    : {}}
                 >
                   <Icon size={17} className="nav-item-icon" />
                   <span className="nav-item-label">{item.label}</span>
                   {item.id === 'user-notifications'
                     ? (unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>)
                     : item.id === 'ws-tasks'
-                    ? (pendingRepairCount > 0 && <span className="nav-badge">{pendingRepairCount}</span>)
-                    : (item.badge && <span className="nav-badge">{item.badge}</span>)}
+                      ? (pendingRepairCount > 0 && <span className="nav-badge">{pendingRepairCount}</span>)
+                      : (item.badge && <span className="nav-badge">{item.badge}</span>)}
                 </button>
               );
             })}
@@ -175,9 +175,9 @@ export default function WorkshopSidebar({ activePage, onNavigate, collapsed, onT
           {collapsed
             ? <ChevronRight size={16} color="var(--text-muted)" />
             : <>
-                <ChevronLeft size={16} color="var(--text-muted)" />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
-              </>
+              <ChevronLeft size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600, letterSpacing: '0.06em' }}>COLLAPSE</span>
+            </>
           }
         </button>
       </div>

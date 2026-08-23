@@ -55,7 +55,7 @@ export default function WeatherDrawer({ isOpen, onClose }) {
   const getCondition = () => {
     return currentWeather?.weather?.[0]?.main || 'Clear';
   };
-  
+
   const getWeatherId = () => {
     return currentWeather?.weather?.[0]?.id || 800;
   };
@@ -68,7 +68,7 @@ export default function WeatherDrawer({ isOpen, onClose }) {
     const date = new Date(dt * 1000);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
-  
+
   const formatDate = (dt) => {
     const date = new Date(dt * 1000);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -77,7 +77,7 @@ export default function WeatherDrawer({ isOpen, onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className={`weather-drawer-backdrop ${isOpen ? 'open' : ''}`}
         onClick={onClose}
         style={{
@@ -89,7 +89,7 @@ export default function WeatherDrawer({ isOpen, onClose }) {
       />
 
       {/* Drawer */}
-      <div 
+      <div
         className={`weather-drawer ${isOpen ? 'open' : ''}`}
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px',
@@ -128,10 +128,10 @@ export default function WeatherDrawer({ isOpen, onClose }) {
             <>
               {/* Main Temp */}
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <img 
-                  src={`http://openweathermap.org/img/wn/${currentWeather.weather[0].icon}@4x.png`} 
-                  alt="weather" 
-                  style={{ width: 120, height: 120, filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }} 
+                <img
+                  src={`http://openweathermap.org/img/wn/${currentWeather.weather[0].icon}@4x.png`}
+                  alt="weather"
+                  style={{ width: 120, height: 120, filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }}
                 />
                 <div style={{ fontSize: '4.5rem', fontWeight: 200, color: '#fff', lineHeight: 1 }}>
                   {Math.round(currentWeather.main.temp)}°C
@@ -145,7 +145,7 @@ export default function WeatherDrawer({ isOpen, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
                 <div style={{ background: 'rgba(0,0,0,0.4)', padding: 15, borderRadius: 15, border: '1px solid rgba(255,255,255,0.1)' }}>
                   <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Thermometer size={14} /> Feels like
+                    <Thermometer size={14} /> Temperature
                   </div>
                   <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 600, marginTop: 5 }}>
                     {Math.round(currentWeather.main.feels_like)}°C
@@ -183,10 +183,10 @@ export default function WeatherDrawer({ isOpen, onClose }) {
                   <div style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, marginBottom: 15 }}>5-Day Forecast (3h)</div>
                   <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
                     {forecast.map((item, idx) => (
-                      <div key={idx} style={{ 
-                        background: 'rgba(0,0,0,0.4)', padding: '15px 10px', borderRadius: 15, 
-                        border: '1px solid rgba(255,255,255,0.1)', minWidth: 80, display: 'flex', 
-                        flexDirection: 'column', alignItems: 'center', flexShrink: 0 
+                      <div key={idx} style={{
+                        background: 'rgba(0,0,0,0.4)', padding: '15px 10px', borderRadius: 15,
+                        border: '1px solid rgba(255,255,255,0.1)', minWidth: 80, display: 'flex',
+                        flexDirection: 'column', alignItems: 'center', flexShrink: 0
                       }}>
                         <div style={{ color: '#fff', fontWeight: 600 }}>{formatTime(item.dt)}</div>
                         <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>{formatDate(item.dt)}</div>
