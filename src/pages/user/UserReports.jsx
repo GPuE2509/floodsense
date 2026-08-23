@@ -351,7 +351,7 @@ export default function UserReports() {
 
         const formData = new FormData();
         formData.append('image', file);
-        const aiServerUrl = import.meta.env.VITE_AI_API_URL || 'http://localhost:5002';
+        const aiServerUrl = import.meta.env.VITE_AI_API_URL || 'https://floodsenseai.onrender.com';
         const apiRes = await fetch(`${aiServerUrl}/api/predict`, {
           method: 'POST',
           body: formData,
