@@ -141,7 +141,7 @@ function WorkshopMissionMap({ activeTask, isFullscreen, setIsFullscreen }) {
         if (res && res.success && res.data && res.data.length > 0) {
           setRouteAlternatives(res.data);
           setSelectedRouteIdx(0);
-          
+
           const bestRoute = res.data[0];
           const coordinates = bestRoute.geometry.coordinates.map(c => [c[1], c[0]]);
           setRoutePath(coordinates);
@@ -334,8 +334,8 @@ function WorkshopMissionMap({ activeTask, isFullscreen, setIsFullscreen }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>ETA</span>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--green-400)', fontFamily: 'var(--font-mono)' }}>
-                {routeDuration >= 3600 
-                  ? `${Math.floor(routeDuration / 3600)}h ${Math.round((routeDuration % 3600) / 60)}m` 
+                {routeDuration >= 3600
+                  ? `${Math.floor(routeDuration / 3600)}h ${Math.round((routeDuration % 3600) / 60)}m`
                   : `${Math.ceil(routeDuration / 60)} mins`}
               </span>
             </div>
@@ -433,11 +433,11 @@ function WorkshopMissionMap({ activeTask, isFullscreen, setIsFullscreen }) {
               : floodedSensors
             ).map((f, idx) => {
               if (f.lat === undefined || f.lat === null || f.lng === undefined || f.lng === null) return null;
-              
+
               const currentLevel = f.waterLevel || f.current_water_level || 0;
               const hasWater = currentLevel > 5;
               const levelText = `${Math.round(currentLevel * 10) / 10} cm`;
-              
+
               let mapColor = '#22c55e';
               if (f.warning_water_status === 'danger' || currentLevel > 50) {
                 mapColor = '#ef4444';
@@ -757,14 +757,14 @@ export default function WorkshopTasks() {
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>"{selected.note}"</div>
           </div>
           {[
-            { 
-              icon: Wrench, 
-              label: "Service", 
+            {
+              icon: Wrench,
+              label: "Service",
               value: (selected.selected_services && selected.selected_services.length > 0) ? (
                 <div style={{ display: 'grid', gap: 4, marginTop: 2 }}>
                   {selected.selected_services.map((srv, i) => (
                     <div key={i} style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-                      {srv.service_name} 
+                      {srv.service_name}
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
                         {' '}({srv.base_price?.toLocaleString('vi-VN')}₫ / {srv.unit || 'turn'})
                       </span>
@@ -773,9 +773,9 @@ export default function WorkshopTasks() {
                 </div>
               ) : selected.service
             },
-            { 
-              icon: Wrench, 
-              label: "Total Price", 
+            {
+              icon: Wrench,
+              label: "Total Price",
               value: (
                 <span>
                   {selected.total_price ? `${selected.total_price.toLocaleString('vi-VN')}₫` : '0₫'}
@@ -890,7 +890,7 @@ export default function WorkshopTasks() {
   return (
     <div className="page-enter">
       <div className="page-header">
-        <h1>Manage vehicle repair orders</h1>
+        <h1>Manage Vehicle Repair Orders</h1>
         <p>Receive, assign Workshop Staff and monitor the status of mobile vehicle repair orders</p>
       </div>
 
@@ -914,7 +914,7 @@ export default function WorkshopTasks() {
       {/* Tabs */}
       <div className="tabs-nav" style={{ marginBottom: 20, maxWidth: 500 }}>
         <button className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>
-          <Wrench size={13} /> Menu list
+          <Wrench size={13} /> Menu List
         </button>
         <button
           className={`tab-btn ${activeTab === 'track' ? 'active' : ''}`}
@@ -922,7 +922,7 @@ export default function WorkshopTasks() {
           disabled={!activeTask}
           style={{ opacity: activeTask ? 1 : 0.5, cursor: activeTask ? 'pointer' : 'not-allowed' }}
         >
-          <Navigation size={13} /> Mission tracking
+          <Navigation size={13} /> Mission Tracking
         </button>
       </div>
 
@@ -952,16 +952,16 @@ export default function WorkshopTasks() {
                     border: '1px solid var(--border-dim)'
                   }}
                 />
-                <Search 
-                  size={14} 
-                  style={{ 
-                    position: 'absolute', 
-                    left: 12, 
-                    top: '50%', 
-                    transform: 'translateY(-50%)', 
+                <Search
+                  size={14}
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
                     opacity: 0.5,
                     color: 'var(--text-muted)'
-                  }} 
+                  }}
                 />
               </div>
             </div>
@@ -1032,8 +1032,8 @@ export default function WorkshopTasks() {
                   Showing <strong style={{ color: 'var(--text-primary)' }}>{totalTasks === 0 ? 0 : (page - 1) * limit + 1}-{Math.min(page * limit, totalTasks)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalTasks}</strong> tasks
                 </span>
                 <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
-                  <button 
-                    className="btn btn-sm btn-ghost" 
+                  <button
+                    className="btn btn-sm btn-ghost"
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
                     style={{ opacity: page === 1 ? 0.5 : 1 }}
@@ -1041,11 +1041,11 @@ export default function WorkshopTasks() {
                     Previous
                   </button>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                    Page 
-                    <input 
-                      type="number" 
-                      min="1" 
-                      max={totalPages} 
+                    Page
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
                       value={pageInput}
                       onChange={(e) => {
                         const valStr = e.target.value;
@@ -1072,8 +1072,8 @@ export default function WorkshopTasks() {
                     />
                     of {totalPages}
                   </span>
-                  <button 
-                    className="btn btn-sm btn-ghost" 
+                  <button
+                    className="btn btn-sm btn-ghost"
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
                     style={{ opacity: page === totalPages ? 0.5 : 1 }}
@@ -1149,7 +1149,7 @@ export default function WorkshopTasks() {
                   </div>
                 ))}
               </div>
-              
+
               <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-dim)' }}>
                 {activeTask.status === 'assigned' ? (
                   <button

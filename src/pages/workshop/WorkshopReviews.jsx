@@ -111,7 +111,7 @@ export default function WorkshopReviews() {
           ) {
             fetchWorkshopAndReviews(true);
           }
-        } catch (err) {}
+        } catch (err) { }
       };
       ws.onclose = () => {
         timer = setTimeout(connectWs, 3000);
@@ -223,7 +223,7 @@ export default function WorkshopReviews() {
   return (
     <div className="page-enter">
       <div className="page-header">
-        <h1>Customer Reviews & Reviews</h1>
+        <h1>Customer Reviews</h1>
         <p>View and respond to customer reviews to improve service quality</p>
       </div>
 
@@ -252,7 +252,7 @@ export default function WorkshopReviews() {
             <div className="card p-6" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '3rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{avgRating}</div>
               <div style={{ display: 'flex', gap: 3, justifyContent: 'center', margin: '8px 0' }}>
-                {[1,2,3,4,5].map(s => <Star key={s} size={18} fill={s <= Math.round(avgRating) ? '#f59e0b' : 'none'} color={s <= Math.round(avgRating) ? '#f59e0b' : 'var(--border-default)'} />)}
+                {[1, 2, 3, 4, 5].map(s => <Star key={s} size={18} fill={s <= Math.round(avgRating) ? '#f59e0b' : 'none'} color={s <= Math.round(avgRating) ? '#f59e0b' : 'var(--border-default)'} />)}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{reviews.length} Evaluate</div>
             </div>
@@ -265,7 +265,7 @@ export default function WorkshopReviews() {
                 return (
                   <div key={star} className="flex items-center gap-3" style={{ marginBottom: 8 }}>
                     <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                      {[1,2,3,4,5].map(s => <Star key={s} size={11} fill={s <= star ? '#f59e0b' : 'none'} color={s <= star ? '#f59e0b' : 'var(--border-default)'} />)}
+                      {[1, 2, 3, 4, 5].map(s => <Star key={s} size={11} fill={s <= star ? '#f59e0b' : 'none'} color={s <= star ? '#f59e0b' : 'var(--border-default)'} />)}
                     </div>
                     <div style={{ flex: 1, height: 8, background: 'var(--bg-elevated)', borderRadius: 99, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: ratingColors[star], borderRadius: 99, boxShadow: `0 0 6px ${ratingColors[star]}44` }} />
@@ -328,7 +328,7 @@ export default function WorkshopReviews() {
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
-                          {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= r.rating ? '#f59e0b' : 'none'} color={s <= r.rating ? '#f59e0b' : 'var(--border-default)'} />)}
+                          {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill={s <= r.rating ? '#f59e0b' : 'none'} color={s <= r.rating ? '#f59e0b' : 'var(--border-default)'} />)}
                         </div>
                         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 6 }}>
                           "{r.comment}"
@@ -536,76 +536,76 @@ export default function WorkshopReviews() {
                     </div>
                   )}
                 </div>
-            ))
-          )}
-          {filtered.length > 0 && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px 20px',
-              borderTop: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface)',
-              borderRadius: 'var(--r-md)',
-              marginTop: 12
-            }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filtered.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> reviews
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
-                >
-                  Previous
-                </button>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Page 
-                  <input
-                    type="number"
-                    min={1}
-                    max={totalPages}
-                    value={pageInput}
-                    onChange={(e) => {
-                      const valStr = e.target.value;
-                      setPageInput(valStr);
-                      const val = parseInt(valStr, 10);
-                      if (!isNaN(val) && val >= 1 && val <= totalPages) {
-                        setCurrentPage(val);
-                      }
-                    }}
-                    onBlur={() => {
-                      setPageInput(currentPage.toString());
-                    }}
-                    style={{
-                      width: 44,
-                      padding: '4px 6px',
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 4,
-                      color: 'var(--text-primary)',
-                      textAlign: 'center',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-mono)'
-                    }}
-                  />
-                  of {totalPages}
+              ))
+            )}
+            {filtered.length > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)',
+                borderRadius: 'var(--r-md)',
+                marginTop: 12
+              }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filtered.length)}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> reviews
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
-                >
-                  Next
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                  >
+                    Previous
+                  </button>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    Page
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInput}
+                      onChange={(e) => {
+                        const valStr = e.target.value;
+                        setPageInput(valStr);
+                        const val = parseInt(valStr, 10);
+                        if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                          setCurrentPage(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        setPageInput(currentPage.toString());
+                      }}
+                      style={{
+                        width: 44,
+                        padding: '4px 6px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 4,
+                        color: 'var(--text-primary)',
+                        textAlign: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                    />
+                    of {totalPages}
+                  </div>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </>
       )}
       <ConfirmModal

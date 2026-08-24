@@ -120,7 +120,7 @@ export default function GuestLeaderboard() {
     <div className="page-enter">
       <div className="page-header flex justify-between items-end">
         <div>
-          <h1>Honor board & Bonus points policy</h1>
+          <h1>Honor board & Point Policy</h1>
           <p>Honor community contributions and transparent point accumulation mechanism</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>

@@ -746,12 +746,94 @@ export default function UserSOS() {
   const [gpsLoading, setGpsLoading] = useState(true);
   const [currentRescue, setCurrentRescue] = useState(null);
 
+  // ── Camera State & Handlers for Web ──
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState('sos'); // 'sos' or 'safe'
+  const [facingMode, setFacingMode] = useState('environment');
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const safeFileInputRef = useRef(null);
+
+  const startCamera = async (target, customFacing) => {
+    const mode = customFacing || facingMode;
+    setCameraTarget(target || 'sos');
+    setCameraActive(true);
+    setTimeout(async () => {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        streamRef.current = mediaStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err) {
+        console.error("Failed to access camera", err);
+        setToast({ type: 'error', message: 'Cannot access camera. Launching camera file capture...' });
+        setCameraActive(false);
+        if (target === 'safe' && safeFileInputRef.current) {
+          safeFileInputRef.current.click();
+        } else if (fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+      }
+    }, 100);
+  };
+
+  const toggleCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    startCamera(cameraTarget, nextMode);
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+      if (cameraTarget === 'safe') {
+        setSafePhotos(prev => {
+          if (prev.length >= 3) return prev;
+          return [...prev, base64Data];
+        });
+      } else {
+        if (photos.length >= 3) {
+          showToast('Limit reached', 'Maximum 3 incident photos allowed.');
+        } else {
+          setPhotos(prev => [...prev, base64Data]);
+        }
+      }
+      stopCamera();
+    }
+  };
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotos(prev => [...prev, reader.result]);
+        setPhotos(prev => {
+          if (prev.length >= 3) return prev;
+          return [...prev, reader.result];
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -1827,15 +1909,20 @@ export default function UserSOS() {
                   </div>
                 ))}
                 {photos.length < 3 && (
-                  <label style={{
-                    width: 70, height: 70, borderRadius: 'var(--r-sm)', border: '1px dashed var(--border-dim)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                    background: 'rgba(255,255,255,0.02)', transition: 'all 0.15s'
-                  }}>
-                    <Camera size={18} color="var(--text-muted)" />
-                    <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 4 }}>Add photo</span>
-                    <input type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => startCamera('sos')}
+                    style={{
+                      width: 70, height: 70, borderRadius: 'var(--r-sm)', border: '1px dashed var(--cyan-400)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      background: 'rgba(6,182,212,0.06)', transition: 'all 0.15s', color: 'var(--cyan-400)'
+                    }}
+                    title="Take Photo (Camera)"
+                  >
+                    <Camera size={18} color="var(--cyan-400)" />
+                    <span style={{ fontSize: '0.55rem', color: 'var(--cyan-400)', marginTop: 4, fontWeight: 600 }}>Take photo</span>
+                    <input ref={fileInputRef} type="file" accept="image/*" capture="environment" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
+                  </button>
                 )}
               </div>
             </div>
@@ -2540,16 +2627,23 @@ export default function UserSOS() {
                     </div>
                   ))}
                   {safePhotos.length < 3 && (
-                    <label style={{
-                      width: 60, height: 60, borderRadius: 'var(--r-sm)', border: '1px dashed var(--border-dim)',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                      background: 'rgba(255,255,255,0.02)', transition: 'all 0.15s'
-                    }}>
-                      <Camera size={14} color="var(--text-muted)" />
-                      <span style={{ fontSize: '0.5rem', color: 'var(--text-muted)', marginTop: 2 }}>Add photo</span>
+                    <button
+                      type="button"
+                      onClick={() => startCamera('safe')}
+                      style={{
+                        width: 60, height: 60, borderRadius: 'var(--r-sm)', border: '1px dashed var(--cyan-400)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                        background: 'rgba(6,182,212,0.06)', transition: 'all 0.15s', color: 'var(--cyan-400)'
+                      }}
+                      title="Take Photo (Camera)"
+                    >
+                      <Camera size={14} color="var(--cyan-400)" />
+                      <span style={{ fontSize: '0.5rem', color: 'var(--cyan-400)', marginTop: 2, fontWeight: 600 }}>Take photo</span>
                       <input
+                        ref={safeFileInputRef}
                         type="file"
                         accept="image/*"
+                        capture="environment"
                         multiple
                         style={{ display: 'none' }}
                         onChange={(e) => {
@@ -2566,7 +2660,7 @@ export default function UserSOS() {
                           });
                         }}
                       />
-                    </label>
+                    </button>
                   )}
                 </div>
               </div>
@@ -2598,6 +2692,56 @@ export default function UserSOS() {
                 Confirm
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOM WEBCAM CAPTURE MODAL ── */}
+      {cameraActive && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.9)', zIndex: 4000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{ position: 'relative', width: '95%', maxWidth: 960, borderRadius: 12, overflow: 'hidden', background: '#000', border: '2px solid var(--cyan-400)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block', transform: 'scaleX(1)' }}
+            />
+            <div style={{
+              position: 'absolute', bottom: 20, left: 0, right: 0,
+              display: 'flex', justifyContent: 'center', gap: 16
+            }}>
+              <button
+                className="btn btn-primary"
+                onClick={capturePhoto}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                title="Capture Photo"
+              >
+                <Camera size={28} />
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={toggleCamera}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, background: 'rgba(255,255,255,0.2)', color: '#fff' }}
+                title="Switch Camera"
+              >
+                <RefreshCw size={24} />
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={stopCamera}
+                style={{ borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                title="Close Camera"
+              >
+                <X size={28} />
+              </button>
+            </div>
+          </div>
+          <div style={{ marginTop: 12, color: '#fff', fontSize: '0.85rem' }}>
+            Position scene photo and click the capture button to take photo
           </div>
         </div>
       )}
